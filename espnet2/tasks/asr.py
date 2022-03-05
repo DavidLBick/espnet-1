@@ -26,6 +26,7 @@ from espnet2.asr.decoder.transformer_decoder import (
     LightweightConvolutionTransformerDecoder,  # noqa: H301
 )
 from espnet2.asr.decoder.transformer_decoder import TransformerDecoder
+from espnet2.asr.decoder.seq_classification import SeqClassifier
 from espnet2.asr.encoder.abs_encoder import AbsEncoder
 from espnet2.asr.encoder.conformer_encoder import ConformerEncoder
 from espnet2.asr.encoder.hubert_encoder import FairseqHubertEncoder

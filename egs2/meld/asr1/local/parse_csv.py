@@ -2,6 +2,7 @@ import csv
 import argparse
 import pdb
 import pickle
+import os 
 
 UTT_i = 1
 SPK_i = 2
@@ -35,8 +36,8 @@ def parse_csv(label_file, audio_dir, wav_scp_path, utt2spk_path,
         espnet_utt_id = f"spk{spkr_id}-utt{meld_utt_id}"
         audio_file_root = f"{audio_dir}/dia{dia_id}_utt{meld_utt_id}"
 
-        # write to necessary files
-        wav_scp.write(f"{espnet_utt_id} ffmpeg -i {audio_file_root}.mp4 {audio_file_root}.wav\n")
+
+        wav_scp.write(f"{espnet_utt_id} ffmpeg -i {audio_file_root}.mp4 -f wav pipe:1 |\n")
         utt2spk.write(f"{espnet_utt_id} {spkr_id}\n")
         text.write(f"{espnet_utt_id} {emo_label}\n") 
   wav_scp.close(); utt2spk.close(); text.close(); 

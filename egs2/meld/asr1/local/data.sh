@@ -51,7 +51,6 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
   # if hasn't been already 
   if [ ! -e data/${tmp}/tmp.done ]; then
     # create directories and files for Kaldi-style data prep
-    rm -r data/{train,valid,test}
     mkdir -p data/{train,valid,test}
     
     python local/create_speaker_id.py --fpath "${datadir}/${sub_dataset}/train_sent_emo.csv"
@@ -85,21 +84,3 @@ for dset in test valid train; do
 done 
 
 log "Successfully finished. [elapsed=${SECONDS}s]"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
