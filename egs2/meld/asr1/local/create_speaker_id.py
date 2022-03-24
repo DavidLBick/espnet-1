@@ -9,7 +9,7 @@ def create_mapping(f):
   spk_dict = dict()
   for i, speaker in enumerate(sorted(unique_speakers)):
     spk_dict[speaker] = i 
-  with open('speaker_dict.pkl', 'wb') as f:
+  with open('data/speaker_dict.pkl', 'wb') as f:
     pickle.dump(spk_dict, f)
   return 
   
