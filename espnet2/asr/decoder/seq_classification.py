@@ -5,6 +5,41 @@ import logging
 from espnet2.asr.decoder.abs_decoder import AbsDecoder
 from espnet2.utils.get_default_kwargs import get_default_kwargs
 from espnet.nets.pytorch_backend.nets_utils import to_device
+from espnet.nets.pytorch_backend.nets_utils import make_pad_mask
+
+import torch
+import torch.nn as nn
+from torch.nn.utils.rnn import pad_sequence
+
+
+class SelfAttentionPooling(nn.Module):
+    """
+    Implementation of SelfAttentionPooling
+    Original Paper: Self-Attention Encoding and Pooling for Speaker Recognition
+    https://arxiv.org/pdf/2008.01077v1.pdf
+    """
+
+    def __init__(self, input_dim):
+        super(SelfAttentionPooling, self).__init__()
+        self.W = nn.Linear(input_dim, 1)
+        self.softmax = nn.functional.softmax
+
+    def forward(self, x, att_mask=None):
+        """
+            N: batch size, T: sequence length, H: Hidden dimension
+            input:
+                x : size (N, T, H)
+            attention_weight:
+                att_w : size (N, T, 1)
+            return:
+                utter_rep: size (N, H)
+        """
+        att_logits = self.W(x).squeeze(-1)
+        if att_mask is not None:
+            att_logits = att_mask + att_logits
+        att_w = self.softmax(att_logits, dim=-1).unsqueeze(-1)
+        utter_rep = torch.sum(x * att_w, dim=1)
+        return utter_rep, att_w
 
 
 class SeqClassifier(AbsDecoder):
@@ -20,21 +55,17 @@ class SeqClassifier(AbsDecoder):
         super().__init__()
         self.pool_type = pool_type
         if pool_type == "att":
-            self.query = torch.nn.Embedding(encoder_output_size, attention_dim)
-            self.value = torch.nn.Linear(encoder_output_size, attention_dim)
-            self.key = torch.nn.Linear(encoder_output_size, attention_dim)
-            self.mha = torch.nn.MultiheadAttention(attention_dim, attention_heads)
+            self.sap = SelfAttentionPooling(encoder_output_size)
 
         self.output = torch.nn.Linear(encoder_output_size, vocab_size)
+        self.attn = None
 
     def pool(self, hs_pad, hlens):
         if self.pool_type == "att":
-            key, query, value = (
-                self.key(hs_pad),
-                self.query(hs_pad),
-                self.value(hs_pad),
+            hs_pad_mask = (~make_pad_mask(hlens, maxlen=hs_pad.size(1)))[:, None, :].to(
+                hs_pad.device
             )
-            pooled, att = self.multihead_att(key, query, value)
+            pooled, att = self.sap(hs_pad, hs_pad_mask)
 
         elif self.pool_type == "mean":
             pooled, att = hs_pad.mean(dim=1).unsqueeze(1), None
@@ -46,5 +77,6 @@ class SeqClassifier(AbsDecoder):
 
     def forward(self, hs_pad, hlens, ys_in_pad, ys_in_lens):
         pooled, att = self.pool(hs_pad, hlens)
+        self.attn = att
         return self.output(pooled), ys_in_lens
-
+    

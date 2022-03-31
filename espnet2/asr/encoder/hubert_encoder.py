@@ -169,6 +169,7 @@ class FairseqHubertEncoder(AbsEncoder):
             self.after_norm = LayerNorm(output_size)
 
         if output_size and output_size != d:
+            logging.info(f" HUBERT Output Size={d}, Requested Model size={output_size}. Adding a projection layer")
             self.output_layer = torch.nn.Sequential(
                 torch.nn.Linear(d, output_size),
             )

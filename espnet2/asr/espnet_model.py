@@ -18,6 +18,7 @@ from espnet.nets.pytorch_backend.transformer.label_smoothing_loss import (
 )
 from espnet2.asr.ctc import CTC
 from espnet2.asr.decoder.abs_decoder import AbsDecoder
+from espnet2.asr.decoder.seq_classification import SeqClassifier
 from espnet2.asr.encoder.abs_encoder import AbsEncoder
 from espnet2.asr.frontend.abs_frontend import AbsFrontend
 from espnet2.asr.postencoder.abs_postencoder import AbsPostEncoder
@@ -64,6 +65,7 @@ class ESPnetASRModel(AbsESPnetModel):
         sym_space: str = "<space>",
         sym_blank: str = "<blank>",
         extract_feats_in_collect_stats: bool = True,
+        disable_add_sos_eos: bool = True,
     ):
         assert check_argument_types()
         assert 0.0 <= ctc_weight <= 1.0, ctc_weight
@@ -86,6 +88,7 @@ class ESPnetASRModel(AbsESPnetModel):
         self.preencoder = preencoder
         self.postencoder = postencoder
         self.encoder = encoder
+        self.disable_sos_eos = disable_add_sos_eos
 
         if not hasattr(self.encoder, "interctc_use_conditioning"):
             self.encoder.interctc_use_conditioning = False
@@ -105,8 +108,7 @@ class ESPnetASRModel(AbsESPnetModel):
             self.joint_network = joint_network
 
             self.criterion_transducer = RNNTLoss(
-                blank=self.blank_id,
-                fastemit_lambda=0.0,
+                blank=self.blank_id, fastemit_lambda=0.0,
             )
 
             if report_cer or report_wer:
@@ -152,7 +154,6 @@ class ESPnetASRModel(AbsESPnetModel):
             self.ctc = None
         else:
             self.ctc = ctc
-
         self.extract_feats_in_collect_stats = extract_feats_in_collect_stats
 
     def forward(
@@ -235,11 +236,7 @@ class ESPnetASRModel(AbsESPnetModel):
                 loss_transducer,
                 cer_transducer,
                 wer_transducer,
-            ) = self._calc_transducer_loss(
-                encoder_out,
-                encoder_out_lens,
-                text,
-            )
+            ) = self._calc_transducer_loss(encoder_out, encoder_out_lens, text,)
 
             if loss_ctc is not None:
                 loss = loss_transducer + (self.ctc_weight * loss_ctc)
@@ -470,8 +467,15 @@ class ESPnetASRModel(AbsESPnetModel):
         ys_pad: torch.Tensor,
         ys_pad_lens: torch.Tensor,
     ):
-        ys_in_pad, ys_out_pad = add_sos_eos(ys_pad, self.sos, self.eos, self.ignore_id)
-        ys_in_lens = ys_pad_lens + 1
+        if not self.disable_sos_eos:
+            ys_in_pad, ys_out_pad = add_sos_eos(
+                ys_pad, self.sos, self.eos, self.ignore_id
+            )
+            ys_in_lens = ys_pad_lens + 1
+        else:
+            ys_in_pad = ys_pad
+            ys_out_pad = ys_pad
+            ys_in_lens = ys_pad_lens
 
         # 1. Forward decoder
         decoder_out, _ = self.decoder(
@@ -532,10 +536,7 @@ class ESPnetASRModel(AbsESPnetModel):
 
         """
         decoder_in, target, t_len, u_len = get_transducer_task_io(
-            labels,
-            encoder_out_lens,
-            ignore_id=self.ignore_id,
-            blank_id=self.blank_id,
+            labels, encoder_out_lens, ignore_id=self.ignore_id, blank_id=self.blank_id,
         )
 
         self.decoder.set_device(encoder_out.device)
@@ -545,12 +546,7 @@ class ESPnetASRModel(AbsESPnetModel):
             encoder_out.unsqueeze(2), decoder_out.unsqueeze(1)
         )
 
-        loss_transducer = self.criterion_transducer(
-            joint_out,
-            target,
-            t_len,
-            u_len,
-        )
+        loss_transducer = self.criterion_transducer(joint_out, target, t_len, u_len,)
 
         cer_transducer, wer_transducer = None, None
         if not self.training and self.error_calculator_trans is not None:

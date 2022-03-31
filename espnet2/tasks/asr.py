@@ -166,6 +166,7 @@ decoder_choices = ClassChoices(
         rnn=RNNDecoder,
         transducer=TransducerDecoder,
         mlm=MLMDecoder,
+        seq_classifier=SeqClassifier,
     ),
     type_check=AbsDecoder,
     default="rnn",

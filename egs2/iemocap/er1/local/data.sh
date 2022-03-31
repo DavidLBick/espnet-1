@@ -145,7 +145,8 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
         done
     fi
     for dset in test valid train; do 
-        utils/validate_data_dir.sh --no-feats data/${dset} || exit 1
+        cut -d ' ' -f1 data/${dset}/text > tmp && mv tmp data/${dset}/text
+	utils/validate_data_dir.sh --no-feats data/${dset} || exit 1
     done
 fi
 log "Successfully finished. [elapsed=${SECONDS}s]"
