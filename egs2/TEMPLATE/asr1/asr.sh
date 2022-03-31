@@ -58,6 +58,7 @@ nbpe=30             # The number of BPE vocabulary.
 bpemode=unigram     # Mode of BPE (unigram or bpe).
 oov="<unk>"         # Out of vocabulary symbol.
 blank="<blank>"     # CTC blank symbol
+disable_add_sos_eos=false
 sos_eos="<sos/eos>" # sos and eos symbole
 bpe_input_sentence_size=100000000 # Size of input sentence for BPE.
 bpe_nlsyms=         # non-linguistic symbols list, separated by a comma, for BPE
@@ -670,6 +671,10 @@ if ! "${skip_data_prep}"; then
 
             _opts="--non_linguistic_symbols ${nlsyms_txt}"
 
+	    _add_opt=""
+	    if (! $disable_add_sos_eos); then
+		    _add_opt+=' --add_symbol "${blank}:0" --add_symbol "${oov}:1" --add_symbol "${sos_eos}:-1"'
+	    fi 
             # The first symbol in token_list must be "<blank>" and the last must be also sos/eos:
             # 0 is reserved for CTC-blank for ASR and also used as ignore-index in the other task
             ${python} -m espnet2.bin.tokenize_text  \
@@ -679,10 +684,7 @@ if ! "${skip_data_prep}"; then
                 --cleaner "${cleaner}" \
                 --g2p "${g2p}" \
                 --write_vocabulary true \
-                --add_symbol "${blank}:0" \
-                --add_symbol "${oov}:1" \
-                --add_symbol "${sos_eos}:-1"
-
+		${_add_opt}
         else
             log "Error: not supported --token_type '${token_type}'"
             exit 2
@@ -691,7 +693,8 @@ if ! "${skip_data_prep}"; then
         # Create word-list for word-LM training
         if ${use_word_lm} && [ "${token_type}" != word ]; then
             log "Generate word level token_list from ${data_feats}/lm_train.txt"
-            ${python} -m espnet2.bin.tokenize_text \
+            
+	    ${python} -m espnet2.bin.tokenize_text \
                 --token_type word \
                 --input "${data_feats}/lm_train.txt" --output "${lm_token_list}" \
                 --field 2- \

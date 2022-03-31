@@ -20,7 +20,7 @@ remove_punctuation=false
 # Note that punctuation normalization will be performed in the "false" case. 
 remove_tag=false
 # Remove [TAGS] (e.g.[LAUGHTER]) if "true".
-remove_emo=
+remove_emo="exc fru xxx fea sur"
 # Remove the utterances with the specified emotional labels
 # emotional labels: ang (anger), hap (happiness), exc (excitement), sad (sadness),
 # fru (frustration), fea (fear), sur (surprise), neu (neutral), and xxx (other)
@@ -81,9 +81,9 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
                 words=$(grep ${utt_id} ${datadir}/Session${n}/dialog/transcriptions/${ses_id}.txt \
                         | sed "s/^.*\]:\s\(.*\)$/\1/g")
                 emo=$(grep ${utt_id} ${datadir}/Session${n}/dialog/EmoEvaluation/${ses_id}.txt \
-                        | sed "s/^.*\t${utt_id}\t\([a-z]\{3\}\)\t.*$/\1/g")
-                if ! eval "echo ${remove_emo} | grep -q ${emo}" ; then
-                    # for sentiment analysis
+                        | sed "s/^.*\t${utt_id}\t\([a-z]\{3\}\)\t.*$/\1/g")	
+		if ! eval "echo ${remove_emo} | grep ${emo}" ; then
+		    # for sentiment analysis
                     if [ ${convert_to_sentiment} = "true" ]; then
                         words2=$(echo "$words" | perl local/prepare_sentiment.pl)
                         if [ ${emo} = "hap" ] || [ ${emo} = "exc" ] || [ ${emo} = "sur" ]; then
