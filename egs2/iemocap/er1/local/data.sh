@@ -20,7 +20,7 @@ remove_punctuation=false
 # Note that punctuation normalization will be performed in the "false" case. 
 remove_tag=false
 # Remove [TAGS] (e.g.[LAUGHTER]) if "true".
-remove_emo="exc fru xxx fea sur"
+remove_emo=
 # Remove the utterances with the specified emotional labels
 # emotional labels: ang (anger), hap (happiness), exc (excitement), sad (sadness),
 # fru (frustration), fea (fear), sur (surprise), neu (neutral), and xxx (other)
@@ -32,7 +32,7 @@ convert_to_sentiment=false
 # Neutral: neu
 
 #data
-datadir=$PROJECT/corpora/IEMOCAP_full_release/IEMOCAP_full_release
+datadir=/ocean/projects/iri120008p/roshansh/corpora/IEMOCAP_full_release/IEMOCAP_full_release
 # IEMOCAP_full_release
 #  |_ README.txt
 #  |_ Documentation/
@@ -81,29 +81,12 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
                 words=$(grep ${utt_id} ${datadir}/Session${n}/dialog/transcriptions/${ses_id}.txt \
                         | sed "s/^.*\]:\s\(.*\)$/\1/g")
                 emo=$(grep ${utt_id} ${datadir}/Session${n}/dialog/EmoEvaluation/${ses_id}.txt \
-                        | sed "s/^.*\t${utt_id}\t\([a-z]\{3\}\)\t.*$/\1/g")	
-		if ! eval "echo ${remove_emo} | grep ${emo}" ; then
-		    # for sentiment analysis
-                    if [ ${convert_to_sentiment} = "true" ]; then
-                        words2=$(echo "$words" | perl local/prepare_sentiment.pl)
-                        if [ ${emo} = "hap" ] || [ ${emo} = "exc" ] || [ ${emo} = "sur" ]; then
-                            echo "${utt_id} Positive ${words2}" >> data/${tmp}/text
-                            echo "${utt_id} ${file}" >> data/${tmp}/wav.scp
-                            echo "${utt_id} ${utt_id}" >> data/${tmp}/utt2spk
-                        elif [ ${emo} = "ang" ] || [ ${emo} = "sad" ] || [ ${emo} = "fru" ] || [ ${emo} = "fea" ]; then
-                            echo "${utt_id} Negative ${words2}" >> data/${tmp}/text
-                            echo "${utt_id} ${file}" >> data/${tmp}/wav.scp
-                            echo "${utt_id} ${utt_id}" >> data/${tmp}/utt2spk
-                        elif [ ${emo} = "neu" ];then
-                            echo "${utt_id} Neutral ${words2}" >> data/${tmp}/text
-                            echo "${utt_id} ${file}" >> data/${tmp}/wav.scp
-                            echo "${utt_id} ${utt_id}" >> data/${tmp}/utt2spk
-                        fi
-                    else
+                        | sed "s/^.*\t${utt_id}\t\([a-z]\{3\}\)\t.*$/\1/g")
+                if ! eval "echo ${remove_emo} | grep -q ${emo}" ; then
+                        # for sentiment analysis
                         echo "${utt_id} <${emo}> ${words}" >> data/${tmp}/text
                         echo "${utt_id} ${file}" >> data/${tmp}/wav.scp
                         echo "${utt_id} ${utt_id}" >> data/${tmp}/utt2spk
-                    fi
                 fi
             done
         done
@@ -145,8 +128,10 @@ if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then
         done
     fi
     for dset in test valid train; do 
-        cut -d ' ' -f1 data/${dset}/text > tmp && mv tmp data/${dset}/text
-	utils/validate_data_dir.sh --no-feats data/${dset} || exit 1
+        cut -d ' ' -f -2 data/${dset}/text > tmp && mv tmp data/${dset}/text
+        ## grep -v "xxx|fru|exc|fea|sur" data/${dset}/text > tmp && mv tmp data/${dset}/text
+        utils/fix_data_dir.sh data/${dset}
+        utils/validate_data_dir.sh --no-feats data/${dset} || exit 1
     done
 fi
 log "Successfully finished. [elapsed=${SECONDS}s]"

@@ -673,7 +673,7 @@ if ! "${skip_data_prep}"; then
 
 	    _add_opt=""
 	    if (! $disable_add_sos_eos); then
-		    _add_opt+=' --add_symbol "${blank}:0" --add_symbol "${oov}:1" --add_symbol "${sos_eos}:-1"'
+		    _add_opt+=" --add_symbol ${blank}:0 --add_symbol ${oov}:1 --add_symbol ${sos_eos}:-1"
 	    fi 
             # The first symbol in token_list must be "<blank>" and the last must be also sos/eos:
             # 0 is reserved for CTC-blank for ASR and also used as ignore-index in the other task

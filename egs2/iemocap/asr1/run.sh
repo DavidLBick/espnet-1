@@ -36,7 +36,7 @@ local_data_opts="--lowercase true --remove_punctuation true --remove_emo xxx_exc
     --lang en \
     --ngpu 1 \
     --use_lm false \
-    --nbpe 5000 \
+    --nbpe 5 \
     --token_type word\
     --feats_type raw\
     --max_wav_duration 30 \

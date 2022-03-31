@@ -75,7 +75,7 @@ class SeqClassifier(AbsDecoder):
 
         return pooled, att
 
-    def forward(self, hs_pad, hlens, ys_in_pad, ys_in_lens):
+    def forward(self, hs_pad, hlens, ys_in_pad=None, ys_in_lens=None):
         pooled, att = self.pool(hs_pad, hlens)
         self.attn = att
         return self.output(pooled), ys_in_lens
