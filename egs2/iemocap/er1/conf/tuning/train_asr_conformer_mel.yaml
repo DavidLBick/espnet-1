@@ -1,0 +1,62 @@
+# network architecture
+# encoder related
+batch_type: length
+batch_bins: 20000
+## Workhorse 
+##batch_bins: 7000
+accum_grad: 1
+max_epoch: 100
+patience: none
+
+frontend: default 
+frontend_conf:
+  n_fft: 400
+  hop_length: 160
+
+encoder: conformer
+encoder_conf:
+    output_size: 64
+    attention_heads: 8
+    linear_units: 64
+    num_blocks: 4
+    dropout_rate: 0.1
+    positional_dropout_rate: 0.1
+    attention_dropout_rate: 0.1
+    input_layer: linear
+    normalize_before: true
+    macaron_style: true
+    pos_enc_layer_type: "rel_pos"
+    selfattention_layer_type: "rel_selfattn"
+    activation_type: "swish"
+    use_cnn_module:  true
+    cnn_module_kernel: 31
+
+# decoder related
+decoder: seq_classifier 
+decoder_conf:
+    pool_type: mean
+    # attention_heads: 4
+    # attention_dim: 64
+    # dropout_rate: 0.1
+
+optim: adam
+optim_conf:
+    lr: 0.001
+
+scheduler: warmuplr     # pytorch v1.1.0+ required
+scheduler_conf:
+    warmup_steps: 5000
+
+model_conf:
+    ctc_weight: 0.0
+    lsm_weight: 0.15
+    length_normalized_loss: false
+    disable_add_sos_eos: true 
+
+specaug: null
+
+best_model_criterion:
+-   - valid
+    - acc
+    - max
+keep_nbest_models: 10
