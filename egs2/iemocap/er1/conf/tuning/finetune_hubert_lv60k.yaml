@@ -1,6 +1,6 @@
 ## 1 X V100-32 GB GPU 
 batch_type: length
-batch_bins: 10000000
+batch_bins: 1000000
 ## Workhorse 
 ##batch_bins: 4000000
 accum_grad: 1
@@ -24,7 +24,7 @@ encoder: hubert
 encoder_conf:
     output_size: 1024
     normalize_before: false
-    freeze_finetune_updates: 1000
+    freeze_finetune_updates: 1
     # if use espent-trained model
     # if use downloaded model:
     hubert_url: https://dl.fbaipublicfiles.com/hubert/hubert_large_ll60k.pt
@@ -37,6 +37,8 @@ decoder_conf:
     # attention_dim: 64
     # dropout_rate: 0.1
 
+paramgroups: "encoder,decoder"
+paramlrs: "0.00001,0.0001"
 model_conf:
     ctc_weight: 0.0
     lsm_weight: 0.15
@@ -62,9 +64,9 @@ best_model_criterion:
 scheduler: reducelronplateau
 scheduler_conf:
         mode: min
-        factor: 0.5
+        factor: 0.9
+        patience: 5
         
-
 unused_parameters: true
 frontend: null
 normalize: null

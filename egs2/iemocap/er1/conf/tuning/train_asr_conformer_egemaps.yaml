@@ -8,12 +8,15 @@ accum_grad: 1
 max_epoch: 100
 patience: none
 
-frontend: s3prl
-frontend_conf:
-    frontend_conf:
-        upstream: hubert_large_ll60k  # Note: If the upstream is changed, please change the input_size in the preencoder.
-    download_dir: ./hub
-    multilayer_feature: True
+#frontend: s3prl
+#frontend_conf:
+#    frontend_conf:
+#        upstream: hubert_large_ll60k  # Note: If the upstream is changed, please change the input_size in the preencoder.
+#    download_dir: ./hub
+#    multilayer_feature: True
+
+frontend: null
+
 
 encoder: conformer
 encoder_conf:

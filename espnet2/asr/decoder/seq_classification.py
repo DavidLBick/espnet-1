@@ -24,22 +24,27 @@ class SelfAttentionPooling(nn.Module):
         self.W = nn.Linear(input_dim, 1)
         self.softmax = nn.functional.softmax
 
-    def forward(self, x, att_mask=None):
+    def forward(self, batch_rep, att_mask=None):
         """
             N: batch size, T: sequence length, H: Hidden dimension
             input:
-                x : size (N, T, H)
+                batch_rep : size (N, T, H)
             attention_weight:
                 att_w : size (N, T, 1)
             return:
                 utter_rep: size (N, H)
         """
-        att_logits = self.W(x).squeeze(-1)
+        att_logits = self.W(batch_rep).squeeze(-1)
+        # logging.info(
+        #     f"SHAPE-x {batch_rep.shape} {att_logits.shape} {att_mask.shape if att_mask is not None else None}"
+        # )
         if att_mask is not None:
             att_logits = att_mask + att_logits
         att_w = self.softmax(att_logits, dim=-1).unsqueeze(-1)
-        utter_rep = torch.sum(x * att_w, dim=1)
-        return utter_rep, att_w
+        utter_rep = torch.sum(batch_rep * att_w, dim=1)
+        #logging.info(f"SHAPE {att_w.shape} {batch_rep.shape} {utter_rep.shape}")
+
+        return utter_rep,att_w
 
 
 class SeqClassifier(AbsDecoder):
@@ -62,10 +67,13 @@ class SeqClassifier(AbsDecoder):
 
     def pool(self, hs_pad, hlens):
         if self.pool_type == "att":
-            hs_pad_mask = (~make_pad_mask(hlens, maxlen=hs_pad.size(1)))[:, None, :].to(
-                hs_pad.device
+            hs_pad_mask = (
+                (~make_pad_mask(hlens, maxlen=hs_pad.size(1)))[:, None, :]
+                .to(hs_pad.device)
+                .squeeze(1)
             )
             pooled, att = self.sap(hs_pad, hs_pad_mask)
+            pooled = pooled.unsqueeze(1)
 
         elif self.pool_type == "mean":
             pooled, att = hs_pad.mean(dim=1).unsqueeze(1), None
@@ -79,4 +87,3 @@ class SeqClassifier(AbsDecoder):
         pooled, att = self.pool(hs_pad, hlens)
         self.attn = att
         return self.output(pooled), ys_in_lens
-    

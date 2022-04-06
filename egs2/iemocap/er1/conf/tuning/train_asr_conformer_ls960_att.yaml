@@ -36,7 +36,7 @@ encoder_conf:
 # decoder related
 decoder: seq_classifier 
 decoder_conf:
-    pool_type: mean
+    pool_type: att
     # attention_heads: 4
     # attention_dim: 64
     # dropout_rate: 0.1

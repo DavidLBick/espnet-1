@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2021  Siddhant Arora
+# Copyright 2021  Roshan Sharma
 #           2021  Carnegie Mellon University
 # Apache 2.0
 
@@ -10,113 +10,58 @@ import re
 import sys
 import pandas as pd
 import argparse
-
-
-def get_classification_result(hyp_file, ref_file, hyp_write, ref_write):
-    hyp_lines = [line for line in hyp_file]
-    ref_lines = [line for line in ref_file]
-
-    error = 0
-    for line_count in range(len(hyp_lines)):
-        hyp_intent = hyp_lines[line_count].split(" ")[0]
-        ref_intent = ref_lines[line_count].split(" ")[0]
-        if hyp_intent != ref_intent:
-            error += 1
-        hyp_write.write(
-            " ".join(hyp_lines[line_count].split("\t")[0].split(" ")[1:])
-            + "\t"
-            + hyp_lines[line_count].split("\t")[1]
-        )
-        ref_write.write(
-            " ".join(ref_lines[line_count].split("\t")[0].split(" ")[1:])
-            + "\t"
-            + ref_lines[line_count].split("\t")[1]
-        )
-    return 1 - (error / len(hyp_lines))
-
+from collections import Counter
+import glob
+from sklearn.metrics import classification_report
+from sklearn.metrics import (
+    precision_score,
+    recall_score,
+    f1_score,
+    accuracy_score,
+    roc_auc_score,
+    classification_report,
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--exp_root", required=True, help="Directory to save experiments")
-parser.add_argument(
-    "--valid_folder",
-    default="inference_asr_model_valid.acc.ave_10best/devel/",
-    help="Directory inside exp_root containing inference on valid set",
-)
-parser.add_argument(
-    "--test_folder",
-    default="inference_asr_model_valid.acc.ave_10best/test/",
-    help="Directory inside exp_root containing inference on test set",
-)
-parser.add_argument(
-    "--utterance_test_folder",
-    default=None,
-    help="Directory inside exp_root containing inference on utterance test set",
-)
-
 args = parser.parse_args()
 
-exp_root = args.exp_root
-valid_inference_folder = args.valid_folder
-test_inference_folder = args.test_folder
 
-valid_hyp_file = open(
-    os.path.join(exp_root, valid_inference_folder + "score_wer/hyp.trn")
-)
-valid_ref_file = open(
-    os.path.join(exp_root, valid_inference_folder + "score_wer/ref.trn")
-)
+class_map = {"<sad>": 0, "<hap>": 1, "<ang>": 2, "<neu>": 3}
 
-valid_hyp_write_file = open(
-    os.path.join(exp_root, valid_inference_folder + "score_wer/hyp_asr.trn"), "w"
-)
-valid_ref_write_file = open(
-    os.path.join(exp_root, valid_inference_folder + "score_wer/ref_asr.trn"), "w"
-)
+with open(os.path.join("data", "valid", "text"), "r") as f:
+    valid_ref = {
+        line.strip().split(" ")[0]: line.strip().split(" ")[1] for line in f.readlines()
+    }
 
-result = get_classification_result(
-    valid_hyp_file, valid_ref_file, valid_hyp_write_file, valid_ref_write_file
-)
-print("Valid Intent Classification Result")
-print(result)
+with open(os.path.join("data", "test", "text"), "r") as f:
+    test_ref = {
+        line.strip().split(" ")[0]: line.strip().split(" ")[1] for line in f.readlines()
+    }
 
-test_hyp_file = open(
-    os.path.join(exp_root, test_inference_folder + "score_wer/hyp.trn")
-)
-test_ref_file = open(
-    os.path.join(exp_root, test_inference_folder + "score_wer/ref.trn")
-)
-test_hyp_write_file = open(
-    os.path.join(exp_root, test_inference_folder + "score_wer/hyp_asr.trn"), "w"
-)
-test_ref_write_file = open(
-    os.path.join(exp_root, test_inference_folder + "score_wer/ref_asr.trn"), "w"
-)
 
-result = get_classification_result(
-    test_hyp_file, test_ref_file, test_hyp_write_file, test_ref_write_file
-)
-print("Test Intent Classification Result")
-print(result)
+for ddir in glob.glob(args.exp_root + os.sep + "decode*"):
+    for tdir in os.listdir(ddir + os.sep):
+        if not os.path.exists(os.path.join(ddir, tdir, "text")):
+            print(f"Skipping folder {os.path.join(ddir, tdir)} as hyp does not exist")
+            continue
+        with open(os.path.join(ddir, tdir, "text"), "r") as f:
+            hyp = {
+                line.strip().split(" ")[0]: line.strip().split(" ")[1]
+                for line in f.readlines()
+            }
+        ref = valid_ref if tdir == "valid" else test_ref
+        keys = list(ref.keys())
+        ref = [class_map[ref[k]] for k in keys]
+        hyp = [class_map[hyp[k]] for k in keys]
+        precision_metric = precision_score(ref, hyp, average="macro")
+        recall_metric = recall_score(ref, hyp, average="macro")
+        accuracy_metric = accuracy_score(ref, hyp)
+        f1_metric = f1_score(ref, hyp, average="macro")
+        # roc_metric = roc_auc_score(ref, hyp, average="macro", multi_class="ovo")
+        output = f"RES: {accuracy_metric}| F-1 {f1_metric} | {recall_metric}| Precision {precision_metric}| "
+        output += "\n"
+        output += classification_report(ref, hyp)
+        with open(os.path.join(ddir, tdir, "classification_report.txt"), "w") as f:
+            f.write(output)
 
-if args.utterance_test_folder is not None:
-    utt_test_inference_folder = args.utterance_test_folder
-    utt_test_hyp_file = open(
-        os.path.join(exp_root, utt_test_inference_folder + "score_wer/hyp.trn")
-    )
-    utt_test_ref_file = open(
-        os.path.join(exp_root, utt_test_inference_folder + "score_wer/ref.trn")
-    )
-    utt_test_hyp_write_file = open(
-        os.path.join(exp_root, utt_test_inference_folder + "score_wer/hyp_asr.trn"), "w"
-    )
-    utt_test_ref_write_file = open(
-        os.path.join(exp_root, utt_test_inference_folder + "score_wer/ref_asr.trn"), "w"
-    )
-    result = get_classification_result(
-        utt_test_hyp_file,
-        utt_test_ref_file,
-        utt_test_hyp_write_file,
-        utt_test_ref_write_file,
-    )
-    print("Unseen Utterance Test Intent Classification Result")
-    print(result)

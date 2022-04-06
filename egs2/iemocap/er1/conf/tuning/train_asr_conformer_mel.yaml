@@ -1,13 +1,13 @@
 # network architecture
 # encoder related
 batch_type: length
-batch_bins: 20000
+batch_bins: 2000000
 ## Workhorse 
 ##batch_bins: 7000
 accum_grad: 1
 max_epoch: 100
 patience: none
-
+log_interval: 10000
 frontend: default 
 frontend_conf:
   n_fft: 400

@@ -110,7 +110,7 @@ nll_batch_size=100 # Affect GPU memory usage when computing nll
 k2_config=./conf/decode_asr_transformer_with_k2.yaml
 
 use_streaming=false # Whether to use streaming decoding
-
+use_classify=false
 use_maskctc=false # Whether to use maskctc decoding
 
 batch_size=1
@@ -1203,7 +1203,9 @@ if ! "${skip_eval}"; then
               asr_inference_tool="espnet2.bin.asr_inference_streaming"
           elif "${use_maskctc}"; then
               asr_inference_tool="espnet2.bin.asr_inference_maskctc"
-          else
+          elif "${use_classify}"; then 
+	      asr_inference_tool="espnet2.bin.utt_classify"
+      	  else
               asr_inference_tool="espnet2.bin.asr_inference"
           fi
         fi

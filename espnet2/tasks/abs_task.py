@@ -96,9 +96,7 @@ optim_classes = dict(
 )
 if LooseVersion(torch.__version__) >= LooseVersion("1.10.0"):
     # From 1.10.0, RAdam is officially supported
-    optim_classes.update(
-        radam=torch.optim.RAdam,
-    )
+    optim_classes.update(radam=torch.optim.RAdam,)
 try:
     import torch_optimizer
 
@@ -118,9 +116,7 @@ try:
     )
     if LooseVersion(torch_optimizer.__version__) < LooseVersion("0.2.0"):
         # From 0.2.0, RAdam is dropped
-        optim_classes.update(
-            radam=torch_optimizer.RAdam,
-        )
+        optim_classes.update(radam=torch_optimizer.RAdam,)
     del torch_optimizer
 except ImportError:
     pass
@@ -267,8 +263,7 @@ class AbsTask(ABC):
         assert check_argument_types()
 
         class ArgumentDefaultsRawTextHelpFormatter(
-            argparse.RawTextHelpFormatter,
-            argparse.ArgumentDefaultsHelpFormatter,
+            argparse.RawTextHelpFormatter, argparse.ArgumentDefaultsHelpFormatter,
         ):
             pass
 
@@ -337,10 +332,7 @@ class AbsTask(ABC):
 
         group = parser.add_argument_group("distributed training related")
         group.add_argument(
-            "--dist_backend",
-            default="nccl",
-            type=str,
-            help="distributed backend",
+            "--dist_backend", default="nccl", type=str, help="distributed backend",
         )
         group.add_argument(
             "--dist_init_method",
@@ -578,34 +570,19 @@ class AbsTask(ABC):
             help="Enable tensorboard logging",
         )
         group.add_argument(
-            "--use_wandb",
-            type=str2bool,
-            default=False,
-            help="Enable wandb logging",
+            "--use_wandb", type=str2bool, default=False, help="Enable wandb logging",
         )
         group.add_argument(
-            "--wandb_project",
-            type=str,
-            default=None,
-            help="Specify wandb project",
+            "--wandb_project", type=str, default=None, help="Specify wandb project",
         )
         group.add_argument(
-            "--wandb_id",
-            type=str,
-            default=None,
-            help="Specify wandb id",
+            "--wandb_id", type=str, default=None, help="Specify wandb id",
         )
         group.add_argument(
-            "--wandb_entity",
-            type=str,
-            default=None,
-            help="Specify wandb entity",
+            "--wandb_entity", type=str, default=None, help="Specify wandb entity",
         )
         group.add_argument(
-            "--wandb_name",
-            type=str,
-            default=None,
-            help="Specify wandb run name",
+            "--wandb_name", type=str, default=None, help="Specify wandb run name",
         )
         group.add_argument(
             "--wandb_model_log_interval",
@@ -649,11 +626,7 @@ class AbsTask(ABC):
             help="Ignore size mismatch when loading pre-trained model",
         )
         group.add_argument(
-            "--freeze_param",
-            type=str,
-            default=[],
-            nargs="*",
-            help="Freeze parameters",
+            "--freeze_param", type=str, default=[], nargs="*", help="Freeze parameters",
         )
 
         group = parser.add_argument_group("BatchSampler related")
@@ -817,6 +790,12 @@ class AbsTask(ABC):
         )
 
         group = parser.add_argument_group("Optimizer related")
+        group.add_argument(
+            "--paramgroups", type=str, default=None, help="The LRs",
+        )
+        group.add_argument(
+            f"--paramlrs", type=str, default=None, help="The LRs",
+        )
         for i in range(1, cls.num_optimizers + 1):
             suf = "" if i == 1 else str(i)
             group.add_argument(
@@ -825,6 +804,12 @@ class AbsTask(ABC):
                 default="adadelta",
                 choices=list(optim_classes),
                 help="The optimizer type",
+            )
+            group.add_argument(
+                f"--optim{suf}_modules",
+                type=lambda x: x.lower(),
+                default="model",
+                help="The modules for the optimizer",
             )
             group.add_argument(
                 f"--optim{suf}_conf",
@@ -854,28 +839,47 @@ class AbsTask(ABC):
 
     @classmethod
     def build_optimizers(
-        cls,
-        args: argparse.Namespace,
-        model: torch.nn.Module,
+        cls, args: argparse.Namespace, model: torch.nn.Module,
     ) -> List[torch.optim.Optimizer]:
-        if cls.num_optimizers != 1:
+        if cls.num_optimizers > 1:
             raise RuntimeError(
                 "build_optimizers() must be overridden if num_optimizers != 1"
             )
-
-        optim_class = optim_classes.get(args.optim)
-        if optim_class is None:
-            raise ValueError(f"must be one of {list(optim_classes)}: {args.optim}")
-        if args.sharded_ddp:
-            if fairscale is None:
-                raise RuntimeError("Requiring fairscale. Do 'pip install fairscale'")
-            optim = fairscale.optim.oss.OSS(
-                params=model.parameters(), optim=optim_class, **args.optim_conf
-            )
         else:
-            optim = optim_class(model.parameters(), **args.optim_conf)
+            optim_class = optim_classes.get(args.optim)
+            if optim_class is None:
+                raise ValueError(f"must be one of {list(optim_classes)}: {args.optim}")
+            if args.sharded_ddp:
+                if fairscale is None:
+                    raise RuntimeError(
+                        "Requiring fairscale. Do 'pip install fairscale'"
+                    )
+                optim = fairscale.optim.oss.OSS(
+                    params=model.parameters(), optim=optim_class, **args.optim_conf
+                )
+            else:
+                if args.paramgroups is not None:
+                    param_lists = [
+                        {"params": [p for m, p in model.named_parameters() if x in m]}
+                        for x in args.paramgroups.split(",")
+                    ]
+                    nparam_lists = [
+                        {"params": [m for m, p in model.named_parameters() if x in m]}
+                        for x in args.paramgroups.split(",")
+                    ]
+                    logging.info(f"Names {nparam_lists}")
+                    optim = optim_class(param_lists, **args.optim_conf)
+                    if args.paramlrs is not None:
+                        param_lrs = [float(x) for x in args.paramlrs.split(",")]
+                        for i, x in enumerate(param_lrs):
+                            optim.param_groups[i]["lr"] = x
+                    logging.info(f"Optimizer {optim}")
 
-        optimizers = [optim]
+                else:
+                    optim = optim_class(model.parameters(), **args.optim_conf)
+
+            optimizers = [optim]
+
         return optimizers
 
     @classmethod
@@ -1058,9 +1062,7 @@ class AbsTask(ABC):
                 local_args.ngpu = 1
 
                 process = mp.Process(
-                    target=cls.main_worker,
-                    args=(local_args,),
-                    daemon=False,
+                    target=cls.main_worker, args=(local_args,), daemon=False,
                 )
                 process.start()
                 processes.append(process)
@@ -1240,20 +1242,14 @@ class AbsTask(ABC):
             # 7. Build iterator factories
             if args.multiple_iterator:
                 train_iter_factory = cls.build_multiple_iter_factory(
-                    args=args,
-                    distributed_option=distributed_option,
-                    mode="train",
+                    args=args, distributed_option=distributed_option, mode="train",
                 )
             else:
                 train_iter_factory = cls.build_iter_factory(
-                    args=args,
-                    distributed_option=distributed_option,
-                    mode="train",
+                    args=args, distributed_option=distributed_option, mode="train",
                 )
             valid_iter_factory = cls.build_iter_factory(
-                args=args,
-                distributed_option=distributed_option,
-                mode="valid",
+                args=args, distributed_option=distributed_option, mode="valid",
             )
             if not args.use_matplotlib and args.num_att_plot != 0:
                 args.num_att_plot = 0
@@ -1261,9 +1257,7 @@ class AbsTask(ABC):
 
             if args.num_att_plot != 0:
                 plot_attention_iter_factory = cls.build_iter_factory(
-                    args=args,
-                    distributed_option=distributed_option,
-                    mode="plot_att",
+                    args=args, distributed_option=distributed_option, mode="plot_att",
                 )
             else:
                 plot_attention_iter_factory = None
@@ -1328,10 +1322,7 @@ class AbsTask(ABC):
 
     @classmethod
     def build_iter_options(
-        cls,
-        args: argparse.Namespace,
-        distributed_option: DistributedOption,
-        mode: str,
+        cls, args: argparse.Namespace, distributed_option: DistributedOption, mode: str,
     ):
         if mode == "train":
             preprocess_fn = cls.build_preprocess_fn(args, train=True)
@@ -1454,21 +1445,15 @@ class AbsTask(ABC):
 
         if args.iterator_type == "sequence":
             return cls.build_sequence_iter_factory(
-                args=args,
-                iter_options=iter_options,
-                mode=mode,
+                args=args, iter_options=iter_options, mode=mode,
             )
         elif args.iterator_type == "chunk":
             return cls.build_chunk_iter_factory(
-                args=args,
-                iter_options=iter_options,
-                mode=mode,
+                args=args, iter_options=iter_options, mode=mode,
             )
         elif args.iterator_type == "task":
             return cls.build_task_iter_factory(
-                args=args,
-                iter_options=iter_options,
-                mode=mode,
+                args=args, iter_options=iter_options, mode=mode,
             )
         else:
             raise RuntimeError(f"Not supported: iterator_type={args.iterator_type}")
@@ -1553,10 +1538,7 @@ class AbsTask(ABC):
 
     @classmethod
     def build_chunk_iter_factory(
-        cls,
-        args: argparse.Namespace,
-        iter_options: IteratorOptions,
-        mode: str,
+        cls, args: argparse.Namespace, iter_options: IteratorOptions, mode: str,
     ) -> AbsIterFactory:
         assert check_argument_types()
 
@@ -1626,10 +1608,7 @@ class AbsTask(ABC):
     # NOTE(kamo): Not abstract class
     @classmethod
     def build_task_iter_factory(
-        cls,
-        args: argparse.Namespace,
-        iter_options: IteratorOptions,
-        mode: str,
+        cls, args: argparse.Namespace, iter_options: IteratorOptions, mode: str,
     ) -> AbsIterFactory:
         """Build task specific iterator factory
 
@@ -1781,10 +1760,7 @@ class AbsTask(ABC):
         )
 
         return DataLoader(
-            dataset=dataset,
-            pin_memory=ngpu > 0,
-            num_workers=num_workers,
-            **kwargs,
+            dataset=dataset, pin_memory=ngpu > 0, num_workers=num_workers, **kwargs,
         )
 
     # ~~~~~~~~~ The methods below are mainly used for inference ~~~~~~~~~
