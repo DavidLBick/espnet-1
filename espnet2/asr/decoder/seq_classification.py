@@ -42,9 +42,9 @@ class SelfAttentionPooling(nn.Module):
             att_logits = att_mask + att_logits
         att_w = self.softmax(att_logits, dim=-1).unsqueeze(-1)
         utter_rep = torch.sum(batch_rep * att_w, dim=1)
-        #logging.info(f"SHAPE {att_w.shape} {batch_rep.shape} {utter_rep.shape}")
+        # logging.info(f"SHAPE {att_w.shape} {batch_rep.shape} {utter_rep.shape}")
 
-        return utter_rep,att_w
+        return utter_rep, att_w
 
 
 class SeqClassifier(AbsDecoder):
@@ -86,4 +86,4 @@ class SeqClassifier(AbsDecoder):
     def forward(self, hs_pad, hlens, ys_in_pad=None, ys_in_lens=None):
         pooled, att = self.pool(hs_pad, hlens)
         self.attn = att
-        return self.output(pooled), ys_in_lens
+        return self.output(pooled), att

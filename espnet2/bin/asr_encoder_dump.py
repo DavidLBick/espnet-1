@@ -78,14 +78,14 @@ class EncoderDump:
 
         # Input as audio signal
         logging.info(f" Speech shape ERR {speech.shape}")
-        if speech.shape[-1] == 6:
-            speech = speech[:,2]
-        elif speech.shape[-1] == 2:
-            speech = speech[:,-1]
-        else:
-            logging.info(f" Speech shape ERR {speech.shape}")
-        if speech.shape[0] == 0:
-            return None 
+        #if speech.shape[-1] == 6:
+        #    speech = speech[:,2]
+        #elif speech.shape[-1] == 2:
+        #    speech = speech[:,-1]
+        #else:
+        #    logging.info(f" Speech shape ERR {speech.shape}")
+        #if speech.shape[0] == 0:
+        #    return None 
         if isinstance(speech, np.ndarray):
             speech = torch.tensor(speech)
 

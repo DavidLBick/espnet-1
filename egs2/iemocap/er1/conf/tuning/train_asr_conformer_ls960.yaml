@@ -1,21 +1,20 @@
 # network architecture
 # encoder related
 batch_type: length
-batch_bins: 16000
+batch_bins: 2000000
 ## Workhorse 
 ##batch_bins: 7000
 accum_grad: 1
 max_epoch: 100
 patience: none
-log_interval: 10000
-#frontend: s3prl
-#frontend_conf:
-#    frontend_conf:
-#        upstream: hubert_large_ll60k  # Note: If the upstream is changed, please change the input_size in the preencoder.
-#    download_dir: ./hub
-#    multilayer_feature: True
-input_size: 65 
-frontend: null
+
+frontend: s3prl
+frontend_conf:
+    frontend_conf:
+        upstream: hubert  # Note: If the upstream is changed, please change the input_size in the preencoder.
+    download_dir: ./hub
+    multilayer_feature: True
+
 encoder: conformer
 encoder_conf:
     output_size: 64

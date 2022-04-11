@@ -134,7 +134,6 @@ class Speech2Text:
         results = results.squeeze(1)
         tok_vals, tok_inds = torch.topk(results, self.nbest, dim=-1)
         results_out = []
-        print(results.shape, tok_inds.shape, tok_vals.shape, tok_vals)
         for i in range(1, 1 + self.nbest):
             token_int = tok_inds[:, i - 1].cpu().numpy().tolist()
             score = tok_vals[:, i - 1].cpu().numpy().tolist()
@@ -145,13 +144,15 @@ class Speech2Text:
                 text = self.tokenizer.tokens2text(token)
             else:
                 text = None
+            att = att if att is None else torch.topk(att.view(-1), k=10).indices
             results_out.append((text, token, token_int, score, att))
         assert check_return_type(results_out)
         return results_out
 
     @staticmethod
     def from_pretrained(
-        model_tag: Optional[str] = None, **kwargs: Optional[Any],
+        model_tag: Optional[str] = None,
+        **kwargs: Optional[Any],
     ):
         """Build Speech2Text instance from the pretrained model.
 
@@ -225,7 +226,8 @@ def inference(
         nbest=nbest,
     )
     speech2text = Speech2Text.from_pretrained(
-        model_tag=model_tag, **speech2text_kwargs,
+        model_tag=model_tag,
+        **speech2text_kwargs,
     )
 
     # 3. Build data-iterator
@@ -268,7 +270,11 @@ def inference(
                     ibest_writer["token"][key] = " ".join(token)
                     ibest_writer["token_int"][key] = " ".join(map(str, token_int))
                     ibest_writer["score"][key] = str(score)
-
+                    ibest_writer["att_frames"][key] = (
+                        " ".join(map(str, att_wt.reshape(-1).tolist()))
+                        if att_wt is not None
+                        else ""
+                    )
                     if text is not None:
                         ibest_writer["text"][key] = text
 
@@ -291,7 +297,10 @@ def get_parser():
 
     parser.add_argument("--output_dir", type=str, required=True)
     parser.add_argument(
-        "--ngpu", type=int, default=0, help="The number of gpus. 0 indicates CPU mode",
+        "--ngpu",
+        type=int,
+        default=0,
+        help="The number of gpus. 0 indicates CPU mode",
     )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument(
@@ -319,10 +328,14 @@ def get_parser():
 
     group = parser.add_argument_group("The model configuration related")
     group.add_argument(
-        "--asr_train_config", type=str, help="ASR training configuration",
+        "--asr_train_config",
+        type=str,
+        help="ASR training configuration",
     )
     group.add_argument(
-        "--asr_model_file", type=str, help="ASR model parameter file",
+        "--asr_model_file",
+        type=str,
+        help="ASR model parameter file",
     )
     group.add_argument(
         "--model_tag",
@@ -333,7 +346,10 @@ def get_parser():
 
     group = parser.add_argument_group("Beam-search related")
     group.add_argument(
-        "--batch_size", type=int, default=1, help="The batch size for inference",
+        "--batch_size",
+        type=int,
+        default=1,
+        help="The batch size for inference",
     )
     group.add_argument("--nbest", type=int, default=1, help="Output N-best hypotheses")
 

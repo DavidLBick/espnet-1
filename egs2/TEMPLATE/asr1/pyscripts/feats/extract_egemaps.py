@@ -13,7 +13,7 @@ with open(os.path.join(dir, "wav.scp"), "r") as f:
 
 
 processor = opensmile.Smile(
-    feature_set=opensmile.FeatureSet.eGeMAPSv02,
+    feature_set=opensmile.FeatureSet.ComParE_2016,
     feature_level=opensmile.FeatureLevel.LowLevelDescriptors,
     sampling_rate=16000,
     resample=True,

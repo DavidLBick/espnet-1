@@ -29,15 +29,6 @@ args = parser.parse_args()
 
 class_map = {"<sad>": 0, "<hap>": 1, "<ang>": 2, "<neu>": 3}
 
-with open(os.path.join("data", "valid", "text"), "r") as f:
-    valid_ref = {
-        line.strip().split(" ")[0]: line.strip().split(" ")[1] for line in f.readlines()
-    }
-
-with open(os.path.join("data", "test", "text"), "r") as f:
-    test_ref = {
-        line.strip().split(" ")[0]: line.strip().split(" ")[1] for line in f.readlines()
-    }
 
 
 for ddir in glob.glob(args.exp_root + os.sep + "decode*"):
@@ -45,12 +36,16 @@ for ddir in glob.glob(args.exp_root + os.sep + "decode*"):
         if not os.path.exists(os.path.join(ddir, tdir, "text")):
             print(f"Skipping folder {os.path.join(ddir, tdir)} as hyp does not exist")
             continue
+        with open(os.path.join("data", tdir, "text"), "r") as f:
+            ref = {
+            line.strip().split(" ")[0]: line.strip().split(" ")[1] for line in f.readlines()
+            }
         with open(os.path.join(ddir, tdir, "text"), "r") as f:
             hyp = {
                 line.strip().split(" ")[0]: line.strip().split(" ")[1]
                 for line in f.readlines()
             }
-        ref = valid_ref if tdir == "valid" else test_ref
+        # ref = valid_ref if tdir == "valid" else test_ref
         keys = list(ref.keys())
         ref = [class_map[ref[k]] for k in keys]
         hyp = [class_map[hyp[k]] for k in keys]
