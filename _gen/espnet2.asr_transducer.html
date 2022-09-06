@@ -104,6 +104,7 @@
 <li class="toctree-l1"><a class="reference internal" href="espnet2.gan_tts.html">espnet2.gan_tts package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="espnet2.torch_utils.html">espnet2.torch_utils package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="espnet2.fileio.html">espnet2.fileio package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="espnet2.slu.html">espnet2.slu package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="espnet2.diar.html">espnet2.diar package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="espnet2.main_funcs.html">espnet2.main_funcs package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="espnet2.train.html">espnet2.train package</a></li>
@@ -1078,7 +1079,7 @@ u_len: Label lengths. (B,)</p>
 </dl>
 <dl class="method">
 <dt id="espnet2.asr_transducer.encoder.encoder.Encoder.chunk_forward">
-<code class="sig-name descname">chunk_forward</code><span class="sig-paren">(</span><em class="sig-param">x: torch.Tensor</em>, <em class="sig-param">x_len: torch.Tensor</em>, <em class="sig-param">processed_frames: None._VariableFunctionsClass.tensor</em>, <em class="sig-param">left_context: int = 32</em>, <em class="sig-param">right_context: int = 0</em><span class="sig-paren">)</span> &#x2192; Tuple[torch.Tensor, List[torch.Tensor]]<a class="reference internal" href="../_modules/espnet2/asr_transducer/encoder/encoder.html#Encoder.chunk_forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#espnet2.asr_transducer.encoder.encoder.Encoder.chunk_forward" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">chunk_forward</code><span class="sig-paren">(</span><em class="sig-param">x: torch.Tensor</em>, <em class="sig-param">x_len: torch.Tensor</em>, <em class="sig-param">processed_frames: torch._VariableFunctionsClass.tensor</em>, <em class="sig-param">left_context: int = 32</em>, <em class="sig-param">right_context: int = 0</em><span class="sig-paren">)</span> &#x2192; Tuple[torch.Tensor, List[torch.Tensor]]<a class="reference internal" href="../_modules/espnet2/asr_transducer/encoder/encoder.html#Encoder.chunk_forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#espnet2.asr_transducer.encoder.encoder.Encoder.chunk_forward" title="Permalink to this definition">¶</a></dt>
 <dd><p>Encode input sequences as chunks.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2044,7 +2045,7 @@ states: Decoder hidden states.</p>
 
 <dl class="method">
 <dt id="espnet2.asr_transducer.decoder.abs_decoder.AbsDecoder.init_state">
-<em class="property">abstract </em><code class="sig-name descname">init_state</code><span class="sig-paren">(</span><em class="sig-param">batch_size: int</em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[torch.Tensor, Optional[None._VariableFunctionsClass.tensor]]]<a class="reference internal" href="../_modules/espnet2/asr_transducer/decoder/abs_decoder.html#AbsDecoder.init_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#espnet2.asr_transducer.decoder.abs_decoder.AbsDecoder.init_state" title="Permalink to this definition">¶</a></dt>
+<em class="property">abstract </em><code class="sig-name descname">init_state</code><span class="sig-paren">(</span><em class="sig-param">batch_size: int</em><span class="sig-paren">)</span> &#x2192; Optional[Tuple[torch.Tensor, Optional[torch._VariableFunctionsClass.tensor]]]<a class="reference internal" href="../_modules/espnet2/asr_transducer/decoder/abs_decoder.html#AbsDecoder.init_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#espnet2.asr_transducer.decoder.abs_decoder.AbsDecoder.init_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize decoder states.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -2326,7 +2327,7 @@ states: Decoder hidden states. ((N, B, D_dec), (N, B, D_dec) or None)</p>
 
 <dl class="method">
 <dt id="espnet2.asr_transducer.decoder.rnn_decoder.RNNDecoder.init_state">
-<code class="sig-name descname">init_state</code><span class="sig-paren">(</span><em class="sig-param">batch_size: int</em><span class="sig-paren">)</span> &#x2192; Tuple[torch.Tensor, Optional[None._VariableFunctionsClass.tensor]]<a class="reference internal" href="../_modules/espnet2/asr_transducer/decoder/rnn_decoder.html#RNNDecoder.init_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#espnet2.asr_transducer.decoder.rnn_decoder.RNNDecoder.init_state" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">init_state</code><span class="sig-paren">(</span><em class="sig-param">batch_size: int</em><span class="sig-paren">)</span> &#x2192; Tuple[torch.Tensor, Optional[torch._VariableFunctionsClass.tensor]]<a class="reference internal" href="../_modules/espnet2/asr_transducer/decoder/rnn_decoder.html#RNNDecoder.init_state"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#espnet2.asr_transducer.decoder.rnn_decoder.RNNDecoder.init_state" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize decoder states.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
