@@ -118,7 +118,7 @@ class MTLDecoder(AbsDecoder):
                     if continuous_pool_style == "joint"
                     else [
                         SelfAttentionPooling(encoder_output_size)
-                        for _ in range(vocab_size)
+                        for _ in range(continuous_dim_size)
                     ]
                 )
                 self.cont_processor = torch.nn.Sequential(
@@ -230,7 +230,7 @@ class HMTLDecoderCD(AbsDecoder):
                     if continuous_pool_style == "joint"
                     else [
                         SelfAttentionPooling(encoder_output_size)
-                        for _ in range(vocab_size)
+                        for _ in range(continuous_dim_size)
                     ]
                 )
             self.cont_processor = torch.nn.Sequential(
@@ -397,7 +397,7 @@ class HMTLDecoderDC(AbsDecoder):
                     if continuous_pool_style == "joint"
                     else [
                         SelfAttentionPooling(encoder_output_size)
-                        for _ in range(vocab_size)
+                        for _ in range(continuous_dim_size)
                     ]
                 )
             self.cont_processor = torch.nn.Sequential(
@@ -414,7 +414,9 @@ class HMTLDecoderDC(AbsDecoder):
                     continuous_dim_size,
                 )
                 if continuous_pool_style == "joint"
-                else torch.nn.Linear(continuous_embedding_dim + discrete_embedding_dim, 1)
+                else torch.nn.Linear(
+                    continuous_embedding_dim + discrete_embedding_dim, 1
+                )
             )
 
         if (
@@ -460,7 +462,6 @@ class HMTLDecoderDC(AbsDecoder):
         disc_embedding = self.disc_processor(pooled)
         disc_logits = self.disc_out(disc_embedding)
 
-
         if isinstance(self.cont_sap, list):
             out = []
             for i in range(self.continuous_dim_size):
@@ -468,7 +469,7 @@ class HMTLDecoderDC(AbsDecoder):
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_embedding = self.cont_processor(pooled)
-                cont_input = torch.cat((cont_embedding,disc_embedding), dim=1)
+                cont_input = torch.cat((cont_embedding, disc_embedding), dim=1)
                 cont_logits = self.cont_out(cont_input)
                 out.append(cont_logits)
             cont_logits = torch.cat(out, dim=-1)
@@ -477,7 +478,7 @@ class HMTLDecoderDC(AbsDecoder):
             # Dropout and Activation
             pooled = self.dropout(torch.nn.functional.relu(pooled))
             cont_embedding = self.cont_processor(pooled)
-            cont_input = torch.cat((cont_embedding,disc_embedding), dim=1)
+            cont_input = torch.cat((cont_embedding, disc_embedding), dim=1)
             cont_logits = self.cont_out(cont_input)
 
         return cont_logits, disc_logits

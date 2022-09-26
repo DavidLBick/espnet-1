@@ -351,8 +351,8 @@ if ! "${skip_data_prep}"; then
                     "data/${dset}/wav.scp" "${data_feats}${_suf}/${dset}"
 
                 echo "${feats_type}" > "${data_feats}${_suf}/${dset}/feats_type"
-                [ -f data/"${dset}"/age ] && cp data/"${dset}"/age "${data_feats}${_suf}/${dset}"/
-                [ -f data/"${dset}"/emotion ] && cp data/"${dset}"/emotion "${data_feats}${_suf}/${dset}"/
+                [ -f data/"${dset}"/emotion_cts ] && cp data/"${dset}"/emotion_cts "${data_feats}${_suf}/${dset}"/
+
             done
 
         elif [ "${feats_type}" = fbank_pitch ]; then
@@ -440,8 +440,7 @@ if ! "${skip_data_prep}"; then
             # Copy data dir
             utils/copy_data_dir.sh --validate_opts --non-print "${data_feats}/org/${dset}" "${data_feats}/${dset}"
             cp "${data_feats}/org/${dset}/feats_type" "${data_feats}/${dset}/feats_type"
-            [ -f ${data_feats}/org/${dset}/age ] && cp ${data_feats}/org/${dset}/age "${data_feats}/${dset}"/
-            [ -f ${data_feats}/org/${dset}/emotion ] && cp ${data_feats}/org/${dset}/emotion "${data_feats}/${dset}"/
+            [ -f ${data_feats}/org/${dset}/emotion_cts ] && cp ${data_feats}/org/${dset}/emotion_cts "${data_feats}/${dset}"/
 
 
             # Remove short utterances

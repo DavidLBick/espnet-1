@@ -412,7 +412,6 @@ class SLUPreprocessor(CommonPreprocessor):
         assert check_return_type(data)
         return data
 
-
 class CommonPreprocessor_multi(AbsPreprocessor):
     def __init__(
         self,

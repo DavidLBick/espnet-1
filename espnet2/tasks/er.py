@@ -203,7 +203,7 @@ class ERTask(AbsTask):
         group.add_argument(
             "--token_type",
             type=str,
-            default="bpe",
+            default="word",
             choices=["bpe", "char", "word", "phn"],
             help="The text will be tokenized " "in the specified level token",
         )
@@ -314,6 +314,7 @@ class ERTask(AbsTask):
                 speech_volume_normalize=args.speech_volume_normalize
                 if hasattr(args, "rir_scp")
                 else None,
+                text_name="emotion",
             )
         else:
             retval = None

@@ -77,13 +77,13 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
                 emo=$(grep ${utt_id} ${datadir}/Session${n}/dialog/EmoEvaluation/${ses_id}.txt \
                         | sed "s/^.*\t${utt_id}\t\([a-z]\{3\}\)\t.*$/\1/g")
                 cts_emo=$(grep ${utt_id} ${datadir}/Session${n}/dialog/EmoEvaluation/${ses_id}.txt | cut -d $'\t' -f4\
-                        | tr ',' ' ' | sed 's=\[==g' | sed 's=\]==g') 
+                        | sed 's=\[==g' | sed 's=\]==g' | tr ',' ' ' | tr -s ' ') 
                 if ! eval "echo ${remove_emo} | grep -q ${emo}" ; then
                         # for sentiment analysis
                         echo "${utt_id} <${emo}>" >> data/all/text
                         echo "${utt_id} ${file}" >> data/all/wav.scp
                         echo "${utt_id} ${utt_id}" >> data/all/utt2spk
-                        echo "${utt_id} ${cts_emo}" >> data/all/emotion_cts
+                        echo "${utt_id} ${cts_emo}" | tr -s ' ' >> data/all/emotion_cts
                 fi
             done
         done

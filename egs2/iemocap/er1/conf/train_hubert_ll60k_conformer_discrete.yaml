@@ -12,6 +12,7 @@ frontend_conf:
     download_dir: ./hub
     multilayer_feature: True
 
+use_preprocessor: False 
 
 encoder: conformer
 encoder_conf:

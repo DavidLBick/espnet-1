@@ -75,6 +75,7 @@ class ESPnetERModel(AbsESPnetModel):
         self.ct_weight = cts_weights
 
         if "discrete" in self.mode:
+            disc_weights = torch.tensor(disc_weights)
             self.discrete_loss = torch.nn.CrossEntropyLoss(
                 weight=disc_weights, label_smoothing=lsm_weight, ignore_index=ignore_id
             )
@@ -156,6 +157,10 @@ class ESPnetERModel(AbsESPnetModel):
         self,
         speech: torch.Tensor,
         speech_lengths: torch.Tensor,
+        emotion: torch.Tensor = None,
+        emotion_lengths: torch.Tensor = None,
+        emotion_cts: torch.Tensor = None,
+        emotion_cts_lengths: torch.Tensor = None,
     ) -> Dict[str, torch.Tensor]:
         if self.extract_feats_in_collect_stats:
             feats, feats_lengths = self._extract_feats(speech, speech_lengths)
