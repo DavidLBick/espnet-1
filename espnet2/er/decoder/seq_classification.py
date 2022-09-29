@@ -5,6 +5,8 @@ sequence pooling for utterance classification
 """
 
 
+import logging
+
 import numpy as np
 import torch
 
@@ -34,6 +36,7 @@ class SelfAttentionPooling(torch.nn.Module):
         return:
             utter_rep: size (N, H)
         """
+
         att_logits = self.W(batch_rep).squeeze(-1)
         if att_mask is not None:
             att_logits = att_mask + att_logits
@@ -41,28 +44,6 @@ class SelfAttentionPooling(torch.nn.Module):
         utter_rep = torch.sum(batch_rep * att_w, dim=1)
 
         return utter_rep, att_w
-
-
-def pool(hs_pad, hlens, pool_type, self_att_layer):
-    """
-    Perform temporal sequence pooling- Self-attention pooling,max or mean pooling
-    """
-    if pool_type == "att":
-        hs_pad_mask = (
-            (~make_pad_mask(hlens, maxlen=hs_pad.size(1)))[:, None, :]
-            .to(hs_pad.device)
-            .squeeze(1)
-        )
-        pooled, att = self_att_layer(hs_pad, hs_pad_mask)
-        pooled = pooled.unsqueeze(1)
-
-    elif pool_type == "mean":
-        pooled, att = hs_pad.mean(dim=1).unsqueeze(1), None
-
-    elif pool_type == "max":
-        pooled, att = hs_pad.max(dim=1).unsqueeze(1), None
-
-    return pooled, att
 
 
 class MTLDecoder(AbsDecoder):
@@ -74,7 +55,7 @@ class MTLDecoder(AbsDecoder):
         self,
         vocab_size: int,
         encoder_output_size: int,
-        pool_type: str = "mean",
+        pool_type: str = "att",
         dropout_rate: float = 0.1,
         decoder_style: str = "discrete",
         discrete_pool_style: str = "independent",
@@ -96,10 +77,12 @@ class MTLDecoder(AbsDecoder):
                 self.disc_sap = (
                     SelfAttentionPooling(encoder_output_size)
                     if discrete_pool_style == "joint"
-                    else [
-                        SelfAttentionPooling(encoder_output_size)
-                        for _ in range(vocab_size)
-                    ]
+                    else torch.nn.ModuleList(
+                        [
+                            SelfAttentionPooling(encoder_output_size)
+                            for _ in range(vocab_size)
+                        ]
+                    )
                 )
                 self.disc_processor = torch.nn.Sequential(
                     torch.nn.Linear(encoder_output_size, 128),
@@ -116,10 +99,12 @@ class MTLDecoder(AbsDecoder):
                 self.cont_sap = (
                     SelfAttentionPooling(encoder_output_size)
                     if continuous_pool_style == "joint"
-                    else [
-                        SelfAttentionPooling(encoder_output_size)
-                        for _ in range(continuous_dim_size)
-                    ]
+                    else torch.nn.ModuleList(
+                        [
+                            SelfAttentionPooling(encoder_output_size)
+                            for _ in range(continuous_dim_size)
+                        ]
+                    )
                 )
                 self.cont_processor = torch.nn.Sequential(
                     torch.nn.Linear(encoder_output_size, 128),
@@ -147,6 +132,27 @@ class MTLDecoder(AbsDecoder):
         self.disc_attn = None
         self.cts_attn = None
 
+    def pool(self, hs_pad, hlens, pool_type, self_att_layer):
+        """
+        Perform temporal sequence pooling- Self-attention pooling,max or mean pooling
+        """
+        if pool_type == "att":
+            hs_pad_mask = (
+                (~make_pad_mask(hlens, maxlen=hs_pad.size(1)))[:, None, :]
+                .to(hs_pad.device)
+                .squeeze(1)
+            )
+            pooled, att = self_att_layer(hs_pad, hs_pad_mask)
+            pooled = pooled.unsqueeze(1)
+
+        elif pool_type == "mean":
+            pooled, att = hs_pad.mean(dim=1).unsqueeze(1), None
+
+        elif pool_type == "max":
+            pooled, att = hs_pad.max(dim=1).unsqueeze(1), None
+
+        return pooled, att
+
     def forward(self, hs_pad, hlens, emotion=None, emotion_cts=None):
         """
         Args:
@@ -158,35 +164,58 @@ class MTLDecoder(AbsDecoder):
         disc_logits = None  # discrete emotion logits
         cont_logits = None  # continuous emotion logits
         if "discrete" in self.decoder_style:
-            if isinstance(self.disc_sap, list):
+            if isinstance(self.disc_sap, torch.nn.ModuleList):
                 y_vals_unique = np.unique(emotion.cpu().numpy())
                 pooled = torch.zeros((hs_pad.shape[0], self.encoder_output_size)).to(
                     hs_pad.device
                 )
                 for y_val in y_vals_unique:
-                    inps = hs_pad[emotion == y_val]
-                    lens = hlens[emotion == y_val]
-                    out, att = pool(inps, lens, self.pool_type, self.disc_sap[y_val])
-                    pooled[emotion == y_val] = out.squeeze(1)
+                    indices = (
+                        torch.from_numpy(
+                            np.array([i for i, x in enumerate(emotion) if x == y_val])
+                        )
+                        .long()
+                        .to(hs_pad.device)
+                    )
+                    inps = (
+                        torch.index_select(hs_pad, index=indices, dim=0)
+                        if len(indices) > 1
+                        else hs_pad
+                    )
+                    lens = (
+                        torch.index_select(input=hlens, index=indices, dim=0)
+                        if len(indices) > 1
+                        else hlens
+                    )
+                    assert y_val < len(
+                        self.disc_sap
+                    ), f"y_val {y_val} is out of range of length of self.disc_sap {len(self.disc_sap)}"
+                    out, att = self.pool(
+                        inps, lens, self.pool_type, self.disc_sap[y_val]
+                    )
+                    for i, ind in enumerate(indices):
+                        pooled[ind] = out[i].squeeze(1)
             else:
-                pooled, att = pool(hs_pad, hlens, self.pool_type, self.disc_sap)
+                pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.disc_sap)
 
             # Dropout and Activation
             pooled = self.dropout(torch.nn.functional.relu(pooled))
             disc_logits = self.disc_processor(pooled)
 
         if "continuous" in self.decoder_style:
-            if isinstance(self.cont_sap, list):
+            if isinstance(self.cont_sap, torch.nn.ModuleList):
                 out = []
                 for i in range(self.continuous_dim_size):
-                    pooled, att = pool(hs_pad, hlens, self.pool_type, self.cont_sap[i])
+                    pooled, att = self.pool(
+                        hs_pad, hlens, self.pool_type, self.cont_sap[i]
+                    )
                     # Dropout and Activation
                     pooled = self.dropout(torch.nn.functional.relu(pooled))
                     cont_logits = self.cont_processor(pooled)
                     out.append(cont_logits)
                 cont_logits = torch.cat(out, dim=1)
             else:
-                pooled, att = pool(hs_pad, hlens, self.pool_type, self.cont_sap)
+                pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_logits = self.cont_processor(pooled)
@@ -194,7 +223,7 @@ class MTLDecoder(AbsDecoder):
         return cont_logits, disc_logits
 
 
-class HMTLDecoderCD(AbsDecoder):
+class HMTLDecoderCD(MTLDecoder, AbsDecoder):
     """
     Hierarchical Multitask decoder for joint emotion classification and continuous prediction
     Uses Predicted Continuous Emotion as Input to Discrete Emotion Classifier
@@ -223,56 +252,58 @@ class HMTLDecoderCD(AbsDecoder):
         self.encoder_output_size = encoder_output_size
         self.continuous_dim_size = continuous_dim_size
 
-        if "continuous" in decoder_style:
-            if pool_type == "att":
-                self.cont_sap = (
-                    SelfAttentionPooling(encoder_output_size)
-                    if continuous_pool_style == "joint"
-                    else [
+        if pool_type == "att":
+            self.cont_sap = (
+                SelfAttentionPooling(encoder_output_size)
+                if continuous_pool_style == "joint"
+                else torch.nn.ModuleList(
+                    [
                         SelfAttentionPooling(encoder_output_size)
                         for _ in range(continuous_dim_size)
                     ]
                 )
-            self.cont_processor = torch.nn.Sequential(
-                torch.nn.Linear(encoder_output_size, 128),
-                torch.nn.ReLU(),
-                torch.nn.Dropout(dropout_rate),
-                torch.nn.Linear(128, continuous_embedding_dim),
-                torch.nn.ReLU(),
-                torch.nn.Dropout(dropout_rate),
             )
-            self.cont_out = (
-                torch.nn.Linear(continuous_embedding_dim, continuous_dim_size)
-                if continuous_pool_style == "joint"
-                else torch.nn.Linear(32, 1)
-            )
+        self.cont_processor = torch.nn.Sequential(
+            torch.nn.Linear(encoder_output_size, 128),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(dropout_rate),
+            torch.nn.Linear(128, continuous_embedding_dim),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(dropout_rate),
+        )
+        self.cont_out = (
+            torch.nn.Linear(continuous_embedding_dim, continuous_dim_size)
+            if continuous_pool_style == "joint"
+            else torch.nn.Linear(32, 1)
+        )
 
-        if "discrete" in decoder_style:
-            if pool_type == "att":
-                self.disc_sap = (
-                    SelfAttentionPooling(encoder_output_size)
-                    if discrete_pool_style == "joint"
-                    else [
+        if pool_type == "att":
+            self.disc_sap = (
+                SelfAttentionPooling(encoder_output_size)
+                if discrete_pool_style == "joint"
+                else torch.nn.ModuleList(
+                    [
                         SelfAttentionPooling(encoder_output_size)
                         for _ in range(vocab_size)
                     ]
                 )
-                self.disc_processor = torch.nn.Sequential(
-                    torch.nn.Linear(encoder_output_size, 128),
-                    torch.nn.ReLU(),
-                    torch.nn.Dropout(dropout_rate),
-                    torch.nn.Linear(128, discrete_embedding_dim),
-                    torch.nn.ReLU(),
-                    torch.nn.Dropout(dropout_rate),
-                )
-                cont_embedding_size = (
-                    continuous_embedding_dim
-                    if continuous_pool_style == "joint"
-                    else continuous_embedding_dim * continuous_dim_size
-                )
-                self.disc_out = torch.nn.Linear(
-                    discrete_embedding_dim + cont_embedding_size, vocab_size
-                )
+            )
+            self.disc_processor = torch.nn.Sequential(
+                torch.nn.Linear(encoder_output_size, 128),
+                torch.nn.ReLU(),
+                torch.nn.Dropout(dropout_rate),
+                torch.nn.Linear(128, discrete_embedding_dim),
+                torch.nn.ReLU(),
+                torch.nn.Dropout(dropout_rate),
+            )
+            cont_embedding_size = (
+                continuous_embedding_dim
+                if continuous_pool_style == "joint"
+                else continuous_embedding_dim * continuous_dim_size
+            )
+            self.disc_out = torch.nn.Linear(
+                discrete_embedding_dim + cont_embedding_size, vocab_size
+            )
 
         if (
             "discrete" in decoder_style
@@ -299,11 +330,11 @@ class HMTLDecoderCD(AbsDecoder):
         disc_logits = None  # discrete emotion logits
         cont_logits = None  # continuous emotion logits
 
-        if isinstance(self.cont_sap, list):
+        if isinstance(self.cont_sap, torch.nn.ModuleList):
             out = []
             out_embedding = []
             for i in range(self.continuous_dim_size):
-                pooled, att = pool(hs_pad, hlens, self.pool_type, self.cont_sap[i])
+                pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap[i])
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_embedding = self.cont_processor(pooled)
@@ -313,24 +344,43 @@ class HMTLDecoderCD(AbsDecoder):
             cont_logits = torch.cat(out, dim=-1)
             cont_embedding = torch.cat(out_embedding, dim=-1)
         else:
-            pooled, att = pool(hs_pad, hlens, self.pool_type, self.cont_sap)
+            pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
             # Dropout and Activation
             pooled = self.dropout(torch.nn.functional.relu(pooled))
             cont_embedding = self.cont_processor(pooled)
             cont_logits = self.cont_out(cont_embedding)
 
-        if isinstance(self.disc_sap, list):
+        if isinstance(self.disc_sap, torch.nn.ModuleList):
             y_vals_unique = np.unique(emotion.cpu().numpy())
             pooled = torch.zeros((hs_pad.shape[0], self.encoder_output_size)).to(
                 hs_pad.device
             )
             for y_val in y_vals_unique:
-                inps = hs_pad[emotion == y_val]
-                lens = hlens[emotion == y_val]
-                out, att = pool(inps, lens, self.pool_type, self.disc_sap[y_val])
-                pooled[emotion == y_val] = out.squeeze(1)
+                indices = (
+                    torch.from_numpy(
+                        np.array([i for i, x in enumerate(emotion) if x == y_val])
+                    )
+                    .long()
+                    .to(hs_pad.device)
+                )
+                inps = (
+                    torch.index_select(hs_pad, index=indices, dim=0)
+                    if len(indices) > 1
+                    else hs_pad
+                )
+                lens = (
+                    torch.index_select(input=hlens, index=indices, dim=0)
+                    if len(indices) > 1
+                    else hlens
+                )
+                assert y_val < len(
+                    self.disc_sap
+                ), f"y_val {y_val} is out of range of length of self.disc_sap {len(self.disc_sap)}"
+                out, att = self.pool(inps, lens, self.pool_type, self.disc_sap[y_val])
+                for i, ind in enumerate(indices):
+                    pooled[ind] = out[i].squeeze(1)
         else:
-            pooled, att = pool(hs_pad, hlens, self.pool_type, self.disc_sap)
+            pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.disc_sap)
 
         # Dropout and Activation
         pooled = self.dropout(torch.nn.functional.relu(pooled))
@@ -375,10 +425,12 @@ class HMTLDecoderDC(AbsDecoder):
                 self.disc_sap = (
                     SelfAttentionPooling(encoder_output_size)
                     if discrete_pool_style == "joint"
-                    else [
-                        SelfAttentionPooling(encoder_output_size)
-                        for _ in range(vocab_size)
-                    ]
+                    else torch.nn.ModuleList(
+                        [
+                            SelfAttentionPooling(encoder_output_size)
+                            for _ in range(vocab_size)
+                        ]
+                    )
                 )
                 self.disc_processor = torch.nn.Sequential(
                     torch.nn.Linear(encoder_output_size, 128),
@@ -395,10 +447,12 @@ class HMTLDecoderDC(AbsDecoder):
                 self.cont_sap = (
                     SelfAttentionPooling(encoder_output_size)
                     if continuous_pool_style == "joint"
-                    else [
-                        SelfAttentionPooling(encoder_output_size)
-                        for _ in range(continuous_dim_size)
-                    ]
+                    else torch.nn.ModuleList(
+                        [
+                            SelfAttentionPooling(encoder_output_size)
+                            for _ in range(continuous_dim_size)
+                        ]
+                    )
                 )
             self.cont_processor = torch.nn.Sequential(
                 torch.nn.Linear(encoder_output_size, 128),
@@ -444,28 +498,47 @@ class HMTLDecoderDC(AbsDecoder):
         disc_logits = None  # discrete emotion logits
         cont_logits = None  # continuous emotion logits
 
-        if isinstance(self.disc_sap, list):
+        if isinstance(self.disc_sap, torch.nn.ModuleList):
             y_vals_unique = np.unique(emotion.cpu().numpy())
             pooled = torch.zeros((hs_pad.shape[0], self.encoder_output_size)).to(
                 hs_pad.device
             )
             for y_val in y_vals_unique:
-                inps = hs_pad[emotion == y_val]
-                lens = hlens[emotion == y_val]
-                out, att = pool(inps, lens, self.pool_type, self.disc_sap[y_val])
-                pooled[emotion == y_val] = out.squeeze(1)
+                indices = (
+                        torch.from_numpy(
+                            np.array([i for i, x in enumerate(emotion) if x == y_val])
+                        )
+                        .long()
+                        .to(hs_pad.device)
+                    )
+                inps = (
+                    torch.index_select(hs_pad, index=indices, dim=0)
+                    if len(indices) > 1
+                    else hs_pad
+                )
+                lens = (
+                    torch.index_select(input=hlens, index=indices, dim=0)
+                    if len(indices) > 1
+                    else hlens
+                )
+                assert y_val < len(
+                    self.disc_sap
+                ), f"y_val {y_val} is out of range of length of self.disc_sap {len(self.disc_sap)}"
+                out, att = self.pool(inps, lens, self.pool_type, self.disc_sap[y_val])
+                for i, ind in enumerate(indices):
+                    pooled[ind] = out[i].squeeze(1)
         else:
-            pooled, att = pool(hs_pad, hlens, self.pool_type, self.disc_sap)
+            pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.disc_sap)
 
         # Dropout and Activation
         pooled = self.dropout(torch.nn.functional.relu(pooled))
         disc_embedding = self.disc_processor(pooled)
         disc_logits = self.disc_out(disc_embedding)
 
-        if isinstance(self.cont_sap, list):
+        if isinstance(self.cont_sap, torch.nn.ModuleList):
             out = []
             for i in range(self.continuous_dim_size):
-                pooled, att = pool(hs_pad, hlens, self.pool_type, self.cont_sap[i])
+                pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap[i])
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_embedding = self.cont_processor(pooled)
@@ -474,7 +547,7 @@ class HMTLDecoderDC(AbsDecoder):
                 out.append(cont_logits)
             cont_logits = torch.cat(out, dim=-1)
         else:
-            pooled, att = pool(hs_pad, hlens, self.pool_type, self.cont_sap)
+            pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
             # Dropout and Activation
             pooled = self.dropout(torch.nn.functional.relu(pooled))
             cont_embedding = self.cont_processor(pooled)

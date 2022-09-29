@@ -487,9 +487,9 @@ if ! "${skip_data_prep}"; then
             # Remove empty text
             <"${data_feats}/org/${dset}/text" \
                 awk ' { if( NF != 1 ) print $0; } ' >"${data_feats}/${dset}/text"
-
-            # fix_data_dir.sh leaves only utts which exist in all files
-            utils/fix_data_dir.sh "${data_feats}/${dset}"
+            opt=""
+            [ -f "${data_feats}/org/${dset}/emotion_cts" ] && opt="--utt_extra_files 'emotion_cts'"
+            utils/fix_data_dir.sh ${opt} "${data_feats}/${dset}"
         done
         cut -d ' ' -f2 data/${train_set}/text > ${data_feats}/lm_train.txt
     fi
@@ -573,8 +573,8 @@ if ! "${skip_train}"; then
         utils/split_scp.pl "${key_file}" ${split_scps}
 
         # 2. Generate run.sh
-        log "Generate '${er_stats_dir}/run.sh'. You can resume the process from stage 10 using this script"
-        mkdir -p "${er_stats_dir}"; echo "${run_args} --stage 10 \"\$@\"; exit \$?" > "${er_stats_dir}/run.sh"; chmod +x "${er_stats_dir}/run.sh"
+        log "Generate '${er_stats_dir}/run.sh'. You can resume the process from stage 6 using this script"
+        mkdir -p "${er_stats_dir}"; echo "${run_args} --stage 6 \"\$@\"; exit \$?" > "${er_stats_dir}/run.sh"; chmod +x "${er_stats_dir}/run.sh"
 
         # 3. Submit jobs
         log "er collect-stats started... log: '${_logdir}/stats.*.log'"
@@ -725,9 +725,6 @@ if ! "${skip_train}"; then
                 --bpemodel "${bpemodel}" \
                 --token_type "${token_type}" \
                 --token_list "${token_list}" \
-                --non_linguistic_symbols "${nlsyms_txt}" \
-                --cleaner "${cleaner}" \
-                --g2p "${g2p}" \
                 --valid_data_path_and_name_and_type "${_er_valid_dir}/${_scp},speech,${_type}" \
                 --valid_shape_file "${er_stats_dir}/valid/speech_shape" \
                 --resume true \

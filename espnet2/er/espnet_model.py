@@ -47,7 +47,7 @@ class ESPnetERModel(AbsESPnetModel):
         ignore_id: int = -1,
         lsm_weight: float = 0.0,
         extract_feats_in_collect_stats: bool = True,
-        disc_weights: List[float] = [1.0, 1.0, 1.0],
+        disc_weights: List[float] = [0.2, 0.2, 0.2, 0.2, 0.2],
         discrete_cts_weight: List[float] = [1.0, 1.0],
         cts_weights: list = [1.0, 1.0, 1.0],
     ):
@@ -76,11 +76,14 @@ class ESPnetERModel(AbsESPnetModel):
 
         if "discrete" in self.mode:
             disc_weights = torch.tensor(disc_weights)
-            self.discrete_loss = torch.nn.CrossEntropyLoss(
+            assert (
+                len(disc_weights) == self.vocab_size
+            ), f"discrete weights should be of size {self.vocab_size}"
+            self.criterion_att = torch.nn.CrossEntropyLoss(
                 weight=disc_weights, label_smoothing=lsm_weight, ignore_index=ignore_id
             )
         if "continuous" in self.mode:
-            self.continuous_loss = CCCLoss()
+            self.criterion_ccc = CCCLoss()
         self.extract_feats_in_collect_stats = extract_feats_in_collect_stats
 
     def forward(
@@ -91,6 +94,7 @@ class ESPnetERModel(AbsESPnetModel):
         emotion_lengths: torch.Tensor = None,
         emotion_cts: torch.Tensor = None,
         emotion_cts_lengths: torch.Tensor = None,
+        **kwargs,
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor], torch.Tensor]:
         """Frontend + Encoder + Decoder + Calc loss
 
@@ -130,10 +134,11 @@ class ESPnetERModel(AbsESPnetModel):
             ccc if ccc is not None and len(ccc) == 3 else (None, None, None)
         )
         ccc = float(sum(ccc)) / len(ccc)
+        loss = 0.0
         if loss_att is not None:
-            loss = self.dc_weight[0] * loss_att
+            loss += self.dc_weight[0] * loss_att
         if loss_ccc is not None:
-            loss += self.dc_weight[1] * loss_ccc
+            loss += self.dc_weight[1] * loss_ccc[0]
 
         # Collect Attn branch stats
         stats["loss_att"] = loss_att.detach() if loss_att is not None else None
@@ -249,10 +254,11 @@ class ESPnetERModel(AbsESPnetModel):
         )
 
         # 2. Compute attention loss
-        loss_att = 0
+        loss_att = None
         acc = 0
         f1 = 0
-        if emotion is not None:
+        if "discrete" in self.mode:
+            emotion = emotion.squeeze(-1)  # [B, 1] -> [B,]
             loss_att = self.criterion_att(discrete_out, emotion)
             acc = accuracy_score(
                 torch.argmax(discrete_out, dim=-1).detach().cpu().numpy(),
@@ -264,15 +270,14 @@ class ESPnetERModel(AbsESPnetModel):
                 average="macro",
             )
 
-        loss_ccc = 0
+        loss_ccc = None
         ccc = None
-        if emotion_cts is not None:
+        if "continuous" in self.mode:
             ccc = []
-            for i in range(len(emotion_cts)):
-                loss, ccc_x = self.criterion_att(cts_out[:, i], emotion_cts[:, i])
-                loss_ccc += self.ct_wt[i] * loss
+            loss_ccc = 0
+            for i in range(emotion_cts.shape[-1]):
+                loss, ccc_x = self.criterion_ccc(cts_out[:, i], emotion_cts[:, i])
+                loss_ccc += self.ct_weight[i] * loss
                 ccc.append(ccc_x)
-        else:
-            loss_ccc, ccc = self.criterion_ccc(cts_out, emotion_cts)
 
         return loss_att, acc, f1, loss_ccc, ccc

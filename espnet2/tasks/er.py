@@ -316,6 +316,7 @@ class ERTask(AbsTask):
                 else None,
                 text_name="emotion",
             )
+            logging.info("Created Preprocessor: " + str(retval))
         else:
             retval = None
         assert check_return_type(retval)

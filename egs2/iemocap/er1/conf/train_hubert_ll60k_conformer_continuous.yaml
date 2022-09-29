@@ -37,8 +37,9 @@ decoder: mtl_decoder
 decoder_conf:
     pool_type: att
     dropout_rate: 0.1
-    decoder_style: discrete
-    discrete_pool_style: "independent"
+    decoder_style: continuous
+    continuous_pool_style: "independent"
+    continuous_dim_size: 3
 
 
 write_collected_feats: True
@@ -55,17 +56,17 @@ model_conf:
     lsm_weight: 0.15
 
 specaug: null
-## Model Selection
+# criterion
 val_scheduler_criterion:
     - valid
-    - acc
+    - ccc
 early_stopping_criterion:
     - valid
-    - acc
+    - ccc
     - max
 best_model_criterion:
 -   - valid
-    - acc
+    - ccc
     - max
-
 keep_nbest_models: 10
+

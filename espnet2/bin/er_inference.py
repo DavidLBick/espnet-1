@@ -112,11 +112,9 @@ class Speech2Text:
 
         # data: (Nsamples,) -> (1, Nsamples)
         speech = speech.unsqueeze(0).to(getattr(torch, self.dtype))
-        logging.info(f"Speech Shape {speech.shape}")
         ## Channel Selection
         if speech.shape[-1] == 2 and len(speech.shape) > 1:
             speech = speech[:, :, 0]
-        logging.info(f"Speech Shape After {speech.shape}")
 
         # lengths: (1,)
         lengths = speech.new_full([1], dtype=torch.long, fill_value=speech.size(1))
@@ -260,7 +258,7 @@ def inference(
     )
 
     # 7 .Start for-loop
-    # FIXME(kamo): The output format should be discussed about
+    # TODO(roshansh): Add batch decoding compat 
     with DatadirWriter(output_dir) as writer:
         for keys, batch in loader:
             assert isinstance(batch, dict), type(batch)
@@ -282,13 +280,14 @@ def inference(
                     # Create a directory: outdir/{n}best_recog
                     ibest_writer = writer[f"{n}best_recog"]
                     # Write the result to each file
-                    ibest_writer["token"][key] = " ".join(token)
-                    ibest_writer["token_int"][key] = " ".join(map(str, token_int))
-                    ibest_writer["text"][key] = text
-                    ibest_writer["score"][key] = score
-                    ibest_writer["emotion_cts"][key] = emo_out
+                    if emo_out is not None:
+                        ibest_writer["emotion_cts"][key] = emo_out
                     if text is not None:
                         ibest_writer["text"][key] = text
+                        ibest_writer["token"][key] = token
+                        ibest_writer["token_int"][key] = str(token_int)
+                        ibest_writer["score"][key] = score
+
 
 
 def get_parser():

@@ -1192,7 +1192,9 @@ class AbsTask(ABC):
                 valid_key_file = args.valid_shape_file[0]
             else:
                 valid_key_file = None
-
+            logging.info(
+                f"Starting collect-stats mode with train_key_file={train_key_file} and valid_key_file={valid_key_file}"
+            )
             collect_stats(
                 model=model,
                 train_iter=cls.build_streaming_iterator(
