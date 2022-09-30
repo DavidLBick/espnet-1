@@ -133,7 +133,8 @@ class ESPnetERModel(AbsESPnetModel):
         ccc_v, ccc_a, ccc_d = (
             ccc if ccc is not None and len(ccc) == 3 else (None, None, None)
         )
-        ccc = float(sum(ccc)) / len(ccc)
+        if ccc is not None:
+            ccc = float(sum(ccc)) / len(ccc)
         loss = 0.0
         if loss_att is not None:
             loss += self.dc_weight[0] * loss_att
