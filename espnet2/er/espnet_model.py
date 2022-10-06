@@ -260,6 +260,7 @@ class ESPnetERModel(AbsESPnetModel):
         f1 = 0
         if "discrete" in self.mode:
             emotion = emotion.squeeze(-1)  # [B, 1] -> [B,]
+            discrete_out = discrete_out.squeeze(1) # [7,1,5] -> [7,5]
             loss_att = self.criterion_att(discrete_out, emotion)
             acc = accuracy_score(
                 torch.argmax(discrete_out, dim=-1).detach().cpu().numpy(),

@@ -164,37 +164,44 @@ class MTLDecoder(AbsDecoder):
         disc_logits = None  # discrete emotion logits
         cont_logits = None  # continuous emotion logits
         if "discrete" in self.decoder_style:
+            print("*"*50)
+            print(emotion)
             if isinstance(self.disc_sap, torch.nn.ModuleList):
-                y_vals_unique = np.unique(emotion.cpu().numpy())
-                pooled = torch.zeros((hs_pad.shape[0], self.encoder_output_size)).to(
-                    hs_pad.device
-                )
-                for y_val in y_vals_unique:
-                    indices = (
-                        torch.from_numpy(
-                            np.array([i for i, x in enumerate(emotion) if x == y_val])
+                if emotion is not None:
+                    y_vals_unique = np.unique(emotion.cpu().numpy())
+                    pooled = torch.zeros((hs_pad.shape[0], self.encoder_output_size)).to(
+                        hs_pad.device
+                    )
+                    for y_val in y_vals_unique:
+                        indices = (
+                            torch.from_numpy(
+                                np.array([i for i, x in enumerate(emotion) if x == y_val])
+                            )
+                            .long()
+                            .to(hs_pad.device)
                         )
-                        .long()
-                        .to(hs_pad.device)
-                    )
-                    inps = (
-                        torch.index_select(hs_pad, index=indices, dim=0)
-                        if len(indices) > 1
-                        else hs_pad
-                    )
-                    lens = (
-                        torch.index_select(input=hlens, index=indices, dim=0)
-                        if len(indices) > 1
-                        else hlens
-                    )
-                    assert y_val < len(
-                        self.disc_sap
-                    ), f"y_val {y_val} is out of range of length of self.disc_sap {len(self.disc_sap)}"
-                    out, att = self.pool(
-                        inps, lens, self.pool_type, self.disc_sap[y_val]
-                    )
-                    for i, ind in enumerate(indices):
-                        pooled[ind] = out[i].squeeze(1)
+                        inps = (
+                            torch.index_select(hs_pad, index=indices, dim=0)
+                            if len(indices) > 1
+                            else hs_pad
+                        )
+                        lens = (
+                            torch.index_select(input=hlens, index=indices, dim=0)
+                            if len(indices) > 1
+                            else hlens
+                        )
+                        assert y_val < len(
+                            self.disc_sap
+                        ), f"y_val {y_val} is out of range of length of self.disc_sap {len(self.disc_sap)}"
+                        out, att = self.pool(
+                            inps, lens, self.pool_type, self.disc_sap[y_val]
+                        )
+                        for i, ind in enumerate(indices):
+                            pooled[ind] = out[i].squeeze(1)
+                else:
+                    # Get 5 sets of logits - l1,l2,l3,l4,l5: then return (5,n_classes) -> argmax -> get 5 possible outputs - score all pairs of hyp,ref to get max score ?? / Voting ??
+                    # else condition output should be [1,embedding_dim] for each SAP layer- we have 5 so result is [5,embedding_dim]
+                    pass 
             else:
                 pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.disc_sap)
 
@@ -219,7 +226,9 @@ class MTLDecoder(AbsDecoder):
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_logits = self.cont_processor(pooled)
-
+        
+        print("*"*50)
+        print(cont_logits, disc_logits.shape)
         return cont_logits, disc_logits
 
 
