@@ -57,7 +57,7 @@ token_type=word      # Tokenization type (char or bpe).
 
 # Task and model related
 use_discrete=true 
-use_continuous=true 
+use_continuous=false 
 
 # shellcheck disable=SC2034
 word_vocab_size=10000 # Size of word vocabulary.
