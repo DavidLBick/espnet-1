@@ -42,7 +42,7 @@ parser.add_argument("--exp_root", required=True, help="Experiment root directory
 args = parser.parse_args()
 
 
-for ddir in glob.glob(args.exp_root + os.sep + "decode*"):
+for ddir in glob.glob(args.exp_root + os.sep + "inference*"):
     for tdir in os.listdir(ddir + os.sep):
 
         if not os.path.exists(os.path.join(ddir, tdir, "text")) and not os.path.exists(
@@ -70,7 +70,7 @@ for ddir in glob.glob(args.exp_root + os.sep + "decode*"):
             with open(
                 os.path.join("data", "en_token_list", "word", "tokens.txt"), "r"
             ) as f:
-                class_map = {i: line[i].strip() for i, line in enumerate(f.readlines())}
+                class_map = { line.strip() : i  for i, line in enumerate(f.readlines())}
             keys = list(ref_disc.keys())
             ref_disc = [class_map[ref_disc[k]] for k in keys]
             hyp_disc = [class_map[hyp_disc[k]] for k in keys]

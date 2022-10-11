@@ -33,6 +33,9 @@ class CCCLoss(torch.nn.Module):
             loss: torch.Tensor 
             ccc: float- Concordance Correlation Coefficient
         """
+
+        # print('Within CCC loss and printing the sizes')
+        # print(prediction.shape, ground_truth.shape)
         mean_gt = self.mean(ground_truth, 0)
         mean_pred = self.mean(prediction, 0)
         var_gt = self.var(ground_truth, 0)
