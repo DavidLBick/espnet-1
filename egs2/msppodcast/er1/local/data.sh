@@ -33,7 +33,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
     mkdir -p data/{train,valid,test1}
     for dset in train valid test1; do 
         grep -iF ${dset} ${datadir}/labels/labels_concensus.csv | cut -d ',' -f 1,2,4,3,5,6 | \
-        tr ',' ' ' | awk -F ' ' -v x=${datadir} '{$7=$1;$1=x"/Audios/"$1;gsub(".wav","",$7);if ($6 == "Unknown") {$6=9999};printf("s%04d_%s s%04d %s %s %s %s %s\n",$6,$7,$7,$2,$1,$3,$4,$5)}' > data/${dset}/all.data
+        tr ',' ' ' | awk -F ' ' -v x=${datadir} '{$7=$1;$1=x"/Audios/"$1;gsub(".wav","",$7);if ($6 == "Unknown") {$6=9999};printf("s%04d_%s s%04d %s %s %s %s %s\n",$6,$7,$6,$2,$1,$3,$4,$5)}' > data/${dset}/all.data
         awk -F ' ' '{if (($3 == "H" )|| ($3 == "A" )||($3 == "S" )||($3 == "D" )||($3 == "N" )){print}}' data/${dset}/all.data > tmp && mv tmp data/${dset}/all.data 
         cut -d ' ' -f 1,2  data/${dset}/all.data | LC_ALL=C sort  > data/${dset}/utt2spk 
         cut -d ' ' -f 1,3  data/${dset}/all.data | LC_ALL=C sort  > data/${dset}/text
