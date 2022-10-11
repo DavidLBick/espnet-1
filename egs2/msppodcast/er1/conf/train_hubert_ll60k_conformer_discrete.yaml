@@ -1,0 +1,71 @@
+# network architecture
+batch_type: length
+batch_bins: 1000000
+accum_grad: 1
+max_epoch: 50
+patience: none
+
+frontend: s3prl
+frontend_conf:
+    frontend_conf:
+        upstream: hubert_large_ll60k  # Note: If the upstream is changed, please change the input_size in the preencoder.
+    download_dir: ./hub
+    multilayer_feature: True
+
+log_interval: 100
+
+encoder: conformer
+encoder_conf:
+    output_size: 64
+    attention_heads: 8
+    linear_units: 64
+    num_blocks: 4
+    dropout_rate: 0.1
+    positional_dropout_rate: 0.1
+    attention_dropout_rate: 0.1
+    input_layer: linear
+    normalize_before: true
+    macaron_style: true
+    pos_enc_layer_type: "rel_pos"
+    selfattention_layer_type: "rel_selfattn"
+    activation_type: "swish"
+    use_cnn_module:  true
+    cnn_module_kernel: 31
+
+# decoder related
+decoder: mtl_decoder 
+decoder_conf:
+    pool_type: att
+    dropout_rate: 0.1
+    decoder_style: discrete
+    discrete_pool_style: "independent"
+
+
+write_collected_feats: True
+
+optim: adam
+optim_conf:
+    lr: 0.001
+
+scheduler: warmuplr     # pytorch v1.1.0+ required
+scheduler_conf:
+    warmup_steps: 5000
+
+model_conf:
+    lsm_weight: 0.15
+
+specaug: null
+## Model Selection
+val_scheduler_criterion:
+    - valid
+    - acc
+early_stopping_criterion:
+    - valid
+    - acc
+    - max
+best_model_criterion:
+-   - valid
+    - acc
+    - max
+
+keep_nbest_models: 10

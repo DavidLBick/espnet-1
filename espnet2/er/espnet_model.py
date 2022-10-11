@@ -104,20 +104,19 @@ class ESPnetERModel(AbsESPnetModel):
             emotion: (Batch, Length)
             emotion_lengths: (Batch,)
         """
-        # print(emotion_lengths)
-
-        # assert emotion_lengths.dim() == 1, emotion_lengths.shape
         # Check that batch_size is unified
-        # assert (
-        #     speech.shape[0]
-        #     == speech_lengths.shape[0]
-        #     == emotion.shape[0]
-        #     == emotion_lengths.shape[0]
-        # ), (speech.shape, speech_lengths.shape, emotion.shape, emotion_lengths.shape)
+        assert speech.shape[0] == speech_lengths.shape[0], (
+            speech.shape,
+            speech_lengths.shape,
+        )
+        if "discrete" in self.mode:
+            assert emotion.shape[0] == speech.shape[0], (
+                emotion.shape,
+                speech.shape,
+            ) 
+        
         batch_size = speech.shape[0]
 
-        # for data-parallel
-        # emotion = emotion[:, : emotion_lengths.max()]
 
         # 1. Encoder
         encoder_out, encoder_out_lens = self.encode(speech, speech_lengths)
