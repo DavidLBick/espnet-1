@@ -104,18 +104,20 @@ class ESPnetERModel(AbsESPnetModel):
             emotion: (Batch, Length)
             emotion_lengths: (Batch,)
         """
-        assert emotion_lengths.dim() == 1, emotion_lengths.shape
+        # print(emotion_lengths)
+
+        # assert emotion_lengths.dim() == 1, emotion_lengths.shape
         # Check that batch_size is unified
-        assert (
-            speech.shape[0]
-            == speech_lengths.shape[0]
-            == emotion.shape[0]
-            == emotion_lengths.shape[0]
-        ), (speech.shape, speech_lengths.shape, emotion.shape, emotion_lengths.shape)
+        # assert (
+        #     speech.shape[0]
+        #     == speech_lengths.shape[0]
+        #     == emotion.shape[0]
+        #     == emotion_lengths.shape[0]
+        # ), (speech.shape, speech_lengths.shape, emotion.shape, emotion_lengths.shape)
         batch_size = speech.shape[0]
 
         # for data-parallel
-        emotion = emotion[:, : emotion_lengths.max()]
+        # emotion = emotion[:, : emotion_lengths.max()]
 
         # 1. Encoder
         encoder_out, encoder_out_lens = self.encode(speech, speech_lengths)
@@ -124,6 +126,7 @@ class ESPnetERModel(AbsESPnetModel):
         stats = dict()
 
         # 2b. Attention decoder branch
+        
         loss_att, acc_att, f1_att, loss_ccc, ccc = self._calc_att_loss(
             encoder_out,
             encoder_out_lens,
@@ -277,6 +280,7 @@ class ESPnetERModel(AbsESPnetModel):
         if "continuous" in self.mode:
             ccc = []
             loss_ccc = 0
+            cts_out = cts_out.squeeze(1)
             for i in range(emotion_cts.shape[-1]):
                 loss, ccc_x = self.criterion_ccc(cts_out[:, i], emotion_cts[:, i])
                 loss_ccc += self.ct_weight[i] * loss
