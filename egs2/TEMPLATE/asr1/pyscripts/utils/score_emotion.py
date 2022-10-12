@@ -71,7 +71,10 @@ for ddir in glob.glob(args.exp_root + os.sep + "inference*"):
                 os.path.join("data", "en_token_list", "word", "tokens.txt"), "r"
             ) as f:
                 class_map = { line.strip() : i  for i, line in enumerate(f.readlines())}
+                # class_map = {i: line[i].strip() for i, line in enumerate(f.readlines())}
             keys = list(ref_disc.keys())
+            # print(class_map)
+            # print(hyp_disc)
             ref_disc = [class_map[ref_disc[k]] for k in keys]
             hyp_disc = [class_map[hyp_disc[k]] for k in keys]
             uar = UAR(ref_disc, hyp_disc)

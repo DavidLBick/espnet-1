@@ -227,8 +227,8 @@ class MTLDecoder(AbsDecoder):
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_logits = self.cont_processor(pooled)
         
-        print("*"*50)
-        print(cont_logits, disc_logits.shape)
+        # print("*"*50)
+        # print(cont_logits, disc_logits.shape)
         return cont_logits, disc_logits
 
 

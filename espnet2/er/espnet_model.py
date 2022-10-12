@@ -140,8 +140,10 @@ class ESPnetERModel(AbsESPnetModel):
         loss = 0.0
         if loss_att is not None:
             loss += self.dc_weight[0] * loss_att
+        # print("LOSS_CCC")
+        # print(loss_ccc)
         if loss_ccc is not None:
-            loss += self.dc_weight[1] * loss_ccc[0]
+            loss += self.dc_weight[1] * loss_ccc
 
         # Collect Attn branch stats
         stats["loss_att"] = loss_att.detach() if loss_att is not None else None
