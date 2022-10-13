@@ -35,14 +35,14 @@ time CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --use_discrete true \
     --er_stats_dir exp/er_stats_raw_emo_fold${nj} \
     --feats_type raw \
-    --nj 8 \
+    --nj 4 \
     --max_wav_duration 30 \
     --inference_nj 8 \
     --gpu_inference true \
     --feats_normalize null \
     --inference_er_model valid.acc.ave_10best.pth \
     --er_tag conformer_discrete_base_hubertlarge_fold${nj} \
-    --er_args "--wandb_project emorec_iemocap --use_wandb true --wandb_name conformer_discrete_base_hubertlarge_fold${nj}" \
+    --er_args "--wandb_project multilabel-emorec --wandb_entity cmu-mlsp-emo --use_wandb true --wandb_name conformer_discrete_base_hubertlarge_fold${nj}" \
     --er_config "${er_config}" \
     --use_discrete "${use_discrete}" \
     --use_continuous "${use_continuous}" \

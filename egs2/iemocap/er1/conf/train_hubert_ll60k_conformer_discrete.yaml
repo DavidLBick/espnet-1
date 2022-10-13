@@ -1,6 +1,6 @@
 # network architecture
 batch_type: length
-batch_bins: 1300000
+batch_bins: 1000000
 accum_grad: 1
 max_epoch: 100
 patience: none

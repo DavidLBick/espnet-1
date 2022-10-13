@@ -38,7 +38,7 @@ CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --feats_normalize null \
     --inference_er_model valid.acc.ave_10best.pth \
     --er_tag conformer_continuous_base_hubertlarge_fold${nj} \
-    --er_args "--wandb_project emorec_iemocap --use_wandb true --wandb_name conformer_continuous_base_hubertlarge_fold${nj}" \
+    --er_args "--wandb_project multilabel-emorec --wandb_entity cmu-mlsp-emo --use_wandb true --wandb_name conformer_continuous_base_hubertlarge_fold${nj}" \
     --er_config "${er_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \
