@@ -1,8 +1,8 @@
 # network architecture
 batch_type: length
-batch_bins: 1000000
+batch_bins: 1300000
 accum_grad: 1
-max_epoch: 50
+max_epoch: 100
 patience: none
 
 frontend: s3prl
@@ -13,6 +13,11 @@ frontend_conf:
     multilayer_feature: True
 
 log_interval: 100
+
+preencoder: linear
+preencoder_conf:
+    input_size: 1024  # Note: If the upstream is changed, please change this value accordingly.
+    output_size: 80
 
 encoder: conformer
 encoder_conf:
@@ -38,10 +43,13 @@ decoder_conf:
     pool_type: att
     dropout_rate: 0.1
     decoder_style: discrete
-    discrete_pool_style: "independent"
+    discrete_pool_style: "joint"
+    
 
 
-write_collected_feats: True
+
+write_collected_feats: False 
+normalize: null 
 
 optim: adam
 optim_conf:
@@ -53,12 +61,14 @@ scheduler_conf:
 
 model_conf:
     lsm_weight: 0.15
+    extract_feats_in_collect_stats: False
 
 specaug: null
+
 ## Model Selection
 val_scheduler_criterion:
     - valid
-    - acc
+    - loss
 early_stopping_criterion:
     - valid
     - acc

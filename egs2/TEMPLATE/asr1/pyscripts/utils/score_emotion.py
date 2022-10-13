@@ -42,9 +42,8 @@ parser.add_argument("--exp_root", required=True, help="Experiment root directory
 args = parser.parse_args()
 
 
-for ddir in glob.glob(args.exp_root + os.sep + "inference*"):
+for ddir in glob.glob(args.exp_root + os.sep + "e*"):
     for tdir in os.listdir(ddir + os.sep):
-
         if not os.path.exists(os.path.join(ddir, tdir, "text")) and not os.path.exists(
             os.path.join(ddir, tdir, "emotion_cts")
         ):

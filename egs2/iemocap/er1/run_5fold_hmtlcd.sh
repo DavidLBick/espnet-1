@@ -11,7 +11,7 @@ train_set="train_fold0"${nj}
 valid_set="valid_fold0"${nj}
 test_sets="test_fold0"${nj}
 test_sets=${test_sets}" "${valid_set}
-er_config=conf/train_hubert_ll60k_conformer_discrete.yaml
+er_config=conf/train_hubert_ll60k_conformer_mtl_discrete_continuous_hmtlcd.yaml
 inference_config=conf/decode.yaml
 
 if [[ $(nvidia-smi | grep MiB | wc -l) -gt 1 ]]; then
@@ -37,8 +37,8 @@ CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --gpu_inference true \
     --feats_normalize null \
     --inference_er_model valid.acc.ave_10best.pth \
-    --er_tag conformer_discrete_base_hubertlarge_fold${nj} \
-    --er_args "--wandb_project emorec_iemocap --use_wandb true --wandb_name conformer_discrete_base_hubertlarge_fold${nj}" \
+    --er_tag conformer_discrete_continuous_hmtlcd_hubertlarge_fold${nj} \
+    --er_args "--wandb_project emorec_iemocap --use_wandb true --wandb_name conformer_discrete_continuous_hmtlcd_hubertlarge_fold${nj}" \
     --er_config "${er_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \

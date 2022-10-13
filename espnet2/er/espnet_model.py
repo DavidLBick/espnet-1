@@ -113,10 +113,15 @@ class ESPnetERModel(AbsESPnetModel):
             assert emotion.shape[0] == speech.shape[0], (
                 emotion.shape,
                 speech.shape,
-            ) 
+            )
         
-        batch_size = speech.shape[0]
+        if "continuous" in self.mode:
+            assert emotion_cts.shape[0] == speech.shape[0], (
+                emotion_cts.shape,
+                speech.shape,
+            )
 
+        batch_size = speech.shape[0]
 
         # 1. Encoder
         encoder_out, encoder_out_lens = self.encode(speech, speech_lengths)
@@ -261,7 +266,7 @@ class ESPnetERModel(AbsESPnetModel):
         f1 = 0
         if "discrete" in self.mode:
             emotion = emotion.squeeze(-1)  # [B, 1] -> [B,]
-            discrete_out = discrete_out.squeeze(1) # [7,1,5] -> [7,5]
+            discrete_out = discrete_out.squeeze(1)  # [7,1,5] -> [7,5]
             loss_att = self.criterion_att(discrete_out, emotion)
             acc = accuracy_score(
                 torch.argmax(discrete_out, dim=-1).detach().cpu().numpy(),

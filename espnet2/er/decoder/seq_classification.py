@@ -164,8 +164,6 @@ class MTLDecoder(AbsDecoder):
         disc_logits = None  # discrete emotion logits
         cont_logits = None  # continuous emotion logits
         if "discrete" in self.decoder_style:
-            print("*"*50)
-            print(emotion)
             if isinstance(self.disc_sap, torch.nn.ModuleList):
                 if emotion is not None:
                     y_vals_unique = np.unique(emotion.cpu().numpy())
@@ -227,8 +225,6 @@ class MTLDecoder(AbsDecoder):
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_logits = self.cont_processor(pooled)
         
-        print("*"*50)
-        print(cont_logits, disc_logits.shape)
         return cont_logits, disc_logits
 
 

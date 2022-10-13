@@ -2,9 +2,8 @@
 batch_type: length
 batch_bins: 1200000
 accum_grad: 1
-max_epoch: 50
+max_epoch: 100
 patience: none
-
 
 frontend: s3prl
 frontend_conf:
@@ -38,15 +37,19 @@ encoder_conf:
     use_cnn_module:  true
     cnn_module_kernel: 31
 
+
 # decoder related
-decoder: mtl_decoder 
+decoder: hmtl_decoder_cd
 decoder_conf:
     pool_type: att
     dropout_rate: 0.1
-    decoder_style: continuous
+    decoder_style: discrete,continuous
+    discrete_pool_style: "joint"
     continuous_pool_style: "independent"
+    discrete_continuous_pool_style: "independent"
     continuous_dim_size: 3
-
+    continuous_embedding_dim: 32
+    discrete_embedding_dim: 32
 
 write_collected_feats: False
 
@@ -62,17 +65,19 @@ model_conf:
     lsm_weight: 0.15
     extract_feats_in_collect_stats: False
 
-
 specaug: null
-# criterion
+## Criterion for best model
 val_scheduler_criterion:
     - valid
-    - ccc
+    - loss
 early_stopping_criterion:
     - valid
-    - ccc
+    - acc
     - max
 best_model_criterion:
+-   - valid
+    - acc
+    - max
 -   - valid
     - ccc
     - max

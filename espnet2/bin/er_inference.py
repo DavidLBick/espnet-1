@@ -281,12 +281,12 @@ def inference(
                     ibest_writer = writer[f"{n}best_recog"]
                     # Write the result to each file
                     if emo_out is not None:
-                        ibest_writer["emotion_cts"][key] = emo_out
+                        ibest_writer["emotion_cts"][key] = " ".join(emo_out)
                     if text is not None:
                         ibest_writer["text"][key] = text
                         ibest_writer["token"][key] = token
                         ibest_writer["token_int"][key] = str(token_int)
-                        ibest_writer["score"][key] = score
+                        ibest_writer["score"][key] = score[0]
 
 
 

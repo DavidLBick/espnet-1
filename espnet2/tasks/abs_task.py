@@ -817,6 +817,12 @@ class AbsTask(ABC):
         )
 
         group = parser.add_argument_group("Optimizer related")
+        group.add_argument(
+            "--paramgroups", type=str, default=None, help="The LRs",
+        )
+        group.add_argument(
+            f"--paramlrs", type=str, default=None, help="The LRs",
+        )
         for i in range(1, cls.num_optimizers + 1):
             suf = "" if i == 1 else str(i)
             group.add_argument(
@@ -873,7 +879,25 @@ class AbsTask(ABC):
                 params=model.parameters(), optim=optim_class, **args.optim_conf
             )
         else:
-            optim = optim_class(model.parameters(), **args.optim_conf)
+            if args.paramgroups is not None:
+                param_lists = [
+                    {"params": [p for m, p in model.named_parameters() if x in m]}
+                    for x in args.paramgroups.split(",")
+                ]
+                nparam_lists = [
+                    {"params": [m for m, p in model.named_parameters() if x in m]}
+                    for x in args.paramgroups.split(",")
+                ]
+                logging.info(f"Names {nparam_lists}")
+                optim = optim_class(param_lists, **args.optim_conf)
+                if args.paramlrs is not None:
+                    param_lrs = [float(x) for x in args.paramlrs.split(",")]
+                    for i, x in enumerate(param_lrs):
+                        optim.param_groups[i]["lr"] = x
+                logging.info(f"Optimizer {optim}")
+
+            else:
+                optim = optim_class(model.parameters(), **args.optim_conf)
 
         optimizers = [optim]
         return optimizers
