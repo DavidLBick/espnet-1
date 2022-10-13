@@ -132,6 +132,7 @@ class Speech2Text:
 
         cont_out, disc_out = self.decoder(enc, enc_lens)
         if disc_out is not None:
+            ## if disc_out.shape[0] != 1; then we have mutiple hypotheses
             disc_out = disc_out.squeeze(1)
             tok_vals, tok_inds = torch.topk(disc_out, 1, dim=-1)
             token_int = tok_inds[:, 0].cpu().numpy().tolist()
@@ -144,7 +145,7 @@ class Speech2Text:
             )
 
             score = tok_vals[:, 0].cpu().numpy().tolist()
-            token = self.converter.ids2tokens(token_int)
+            token = self.converter.ids2tokens(token_int)[0]
             if self.tokenizer is not None:
                 text = self.tokenizer.tokens2text(token)
             else:
@@ -283,11 +284,10 @@ def inference(
                     if emo_out is not None:
                         ibest_writer["emotion_cts"][key] = " ".join(emo_out)
                     if text is not None:
-                        ibest_writer["text"][key] = text
-                        ibest_writer["token"][key] = token
+                        ibest_writer["text"][key] = ("").join(text).replace(' ','')
+                        ibest_writer["token"][key] = token#(" ").join(token)
                         ibest_writer["token_int"][key] = str(token_int)
                         ibest_writer["score"][key] = score[0]
-
 
 
 def get_parser():

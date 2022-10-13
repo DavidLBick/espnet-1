@@ -130,6 +130,7 @@ class ESPnetERModel(AbsESPnetModel):
         stats = dict()
 
         # 2b. Attention decoder branch
+        
         loss_att, acc_att, f1_att, loss_ccc, ccc = self._calc_att_loss(
             encoder_out,
             encoder_out_lens,
@@ -144,8 +145,10 @@ class ESPnetERModel(AbsESPnetModel):
         loss = 0.0
         if loss_att is not None:
             loss += self.dc_weight[0] * loss_att
+        # print("LOSS_CCC")
+        # print(loss_ccc)
         if loss_ccc is not None:
-            loss += self.dc_weight[1] * loss_ccc[0]
+            loss += self.dc_weight[1] * loss_ccc
 
         # Collect Attn branch stats
         stats["loss_att"] = loss_att.detach() if loss_att is not None else None
@@ -283,6 +286,7 @@ class ESPnetERModel(AbsESPnetModel):
         if "continuous" in self.mode:
             ccc = []
             loss_ccc = 0
+            cts_out = cts_out.squeeze(1)
             for i in range(emotion_cts.shape[-1]):
                 loss, ccc_x = self.criterion_ccc(cts_out[:, i], emotion_cts[:, i])
                 loss_ccc += self.ct_weight[i] * loss
