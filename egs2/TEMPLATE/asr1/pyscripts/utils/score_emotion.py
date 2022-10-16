@@ -33,6 +33,7 @@ def CCC(y_true, y_pred):
 def MAE(y_true, y_pred):
     return mean_absolute_error(y_true, y_pred).item()
 
+
 def UAR(y_true, y_pred):
     return recall_score(y_true, y_pred, average="macro", zero_division=0).item()
 
@@ -42,7 +43,9 @@ parser.add_argument("--exp_root", required=True, help="Experiment root directory
 args = parser.parse_args()
 
 
-for ddir in glob.glob(args.exp_root + os.sep + "e*"):
+for ddir in glob.glob(args.exp_root + os.sep + "*"):
+    if not os.path.isdir(ddir):
+        continue
     for tdir in os.listdir(ddir + os.sep):
         if not os.path.exists(os.path.join(ddir, tdir, "text")) and not os.path.exists(
             os.path.join(ddir, tdir, "emotion_cts")
@@ -69,7 +72,7 @@ for ddir in glob.glob(args.exp_root + os.sep + "e*"):
             with open(
                 os.path.join("data", "en_token_list", "word", "tokens.txt"), "r"
             ) as f:
-                class_map = { line.strip() : i  for i, line in enumerate(f.readlines())}
+                class_map = {line.strip(): i for i, line in enumerate(f.readlines())}
                 # class_map = {i: line[i].strip() for i, line in enumerate(f.readlines())}
             keys = list(ref_disc.keys())
             # print(class_map)
@@ -93,20 +96,20 @@ for ddir in glob.glob(args.exp_root + os.sep + "e*"):
             with open(os.path.join(ddir, tdir, "emotion_cts"), "r") as f:
                 hyp_emo = {
                     line.strip().split(" ")[0]: [
-                        float(x) for x in line.strip().split(" ")[1].split(",")
+                        float(x) for x in line.strip().split(" ")[1:]
                     ]
                     for line in f.readlines()
                 }
-
+            keys = list(ref_emo.keys())
             ref_emot = np.array([ref_emo[k] for k in keys])
             hyp_emot = np.array([hyp_emo[k] for k in keys])
             classwise_ccc = [
                 CCC(ref_emot[:, i], hyp_emot[:, i]) for i in range(ref_emot.shape[-1])
             ]
             ccc = np.mean(classwise_ccc)
-            mae = MAE(ref_emot, hyp_emot)  
-            output += f"Continuous Result: || CCC | MAE |"        
-            output = f" {os.path.join(ddir, tdir, 'emotion_cts')} Result: || {ccc} | {mae} |\n"
+            mae = MAE(ref_emot, hyp_emot)
+            output += f"Continuous Result: || CCC | MAE |\n"
+            output += f" {os.path.join(ddir, tdir, 'emotion_cts')} Result: || {ccc} | {mae} |\n"
             output += f"Classwise CCC: {classwise_ccc}"
 
         with open(os.path.join(ddir, tdir, "report.txt"), "w") as f:

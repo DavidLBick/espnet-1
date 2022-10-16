@@ -12,7 +12,7 @@ valid_set="valid_fold0"${nj}
 test_sets="test_fold0"${nj}
 test_sets=${test_sets}" "${valid_set}
 er_config=conf/train_hubert_ll60k_conformer_mtl_discrete_continuous.yaml
-inference_config=conf/decode.yaml
+inference_config=conf/decode_er.yaml
 
 if [[ $(nvidia-smi | grep MiB | wc -l) -gt 1 ]]; then
 	cuda_device=$(( $nj -1 ))

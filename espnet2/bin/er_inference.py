@@ -156,7 +156,7 @@ class Speech2Text:
             token_int = None
             score = None
         if cont_out is not None:
-            emo_out = " ".join([str(s) for s in cont_out[0].cpu().numpy().tolist()])
+            emo_out = cont_out.view(-1).cpu().numpy().tolist()
         else:
             emo_out = None
         results_out = [text, token, token_int, score, emo_out]
@@ -282,7 +282,8 @@ def inference(
                     ibest_writer = writer[f"{n}best_recog"]
                     # Write the result to each file
                     if emo_out is not None:
-                        ibest_writer["emotion_cts"][key] = " ".join(emo_out)
+                        print(emo_out)
+                        ibest_writer["emotion_cts"][key] = " ".join([str(x) for x in emo_out])
                     if text is not None:
                         ibest_writer["text"][key] = ("").join(text).replace(' ','')
                         ibest_writer["token"][key] = token#(" ").join(token)

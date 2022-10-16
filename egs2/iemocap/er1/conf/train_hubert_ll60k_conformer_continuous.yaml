@@ -5,7 +5,6 @@ accum_grad: 1
 max_epoch: 100
 patience: none
 
-
 frontend: s3prl
 frontend_conf:
     frontend_conf:
@@ -54,9 +53,9 @@ optim: adam
 optim_conf:
     lr: 0.001
 
-scheduler: warmuplr     # pytorch v1.1.0+ required
+scheduler: warmuplr
 scheduler_conf:
-    warmup_steps: 5000
+        warmup_steps: 8000
 
 model_conf:
     lsm_weight: 0.15

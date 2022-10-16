@@ -841,7 +841,7 @@ if ! "${skip_eval}"; then
                     ${_opts} ${inference_args}
 
             # 3. Concatenates the output files from each jobs
-            for f in token token_int score text emo; do
+            for f in token token_int score text emotion_cts ; do
                 if [ -f "${_logdir}/output.1/1best_recog/${f}" ]; then
                   for i in $(seq "${_nj}"); do
                       cat "${_logdir}/output.${i}/1best_recog/${f}"

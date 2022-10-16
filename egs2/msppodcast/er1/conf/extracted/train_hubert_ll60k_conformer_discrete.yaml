@@ -1,18 +1,13 @@
 # network architecture
 batch_type: length
-batch_bins: 1000000
+batch_bins: 21000
 accum_grad: 1
 max_epoch: 100
 patience: none
 
-frontend: s3prl
-frontend_conf:
-    frontend_conf:
-        upstream: hubert_large_ll60k  # Note: If the upstream is changed, please change the input_size in the preencoder.
-    download_dir: ./hub
-    multilayer_feature: True
+frontend: null
 
-log_interval: 1000
+log_interval: 10000
 
 preencoder: linear
 preencoder_conf:
@@ -37,19 +32,16 @@ encoder_conf:
     use_cnn_module:  true
     cnn_module_kernel: 31
 
-
 # decoder related
 decoder: mtl_decoder 
 decoder_conf:
     pool_type: att
     dropout_rate: 0.1
-    decoder_style: discrete,continuous
+    decoder_style: discrete
     discrete_pool_style: "joint"
-    continuous_pool_style: "independent"
-    discrete_continuous_pool_style: "independent"
-    continuous_dim_size: 3
-
-write_collected_feats: False
+    
+write_collected_feats: False 
+normalize: null 
 
 optim: adam
 optim_conf:
@@ -57,16 +49,18 @@ optim_conf:
 
 scheduler: warmuplr     # pytorch v1.1.0+ required
 scheduler_conf:
-    warmup_steps: 5000
+    warmup_steps: 15000
 
 model_conf:
     lsm_weight: 0.15
+    extract_feats_in_collect_stats: False
 
 specaug: null
-## Criterion for best model
+
+## Model Selection
 val_scheduler_criterion:
     - valid
-    - loss
+    - acc
 early_stopping_criterion:
     - valid
     - acc
@@ -75,8 +69,5 @@ best_model_criterion:
 -   - valid
     - acc
     - max
--   - valid
-    - ccc
-    - max
-keep_nbest_models: 10
 
+keep_nbest_models: 10

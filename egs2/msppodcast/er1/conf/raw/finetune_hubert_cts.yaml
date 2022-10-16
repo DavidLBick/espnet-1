@@ -1,0 +1,69 @@
+# network architecture
+batch_type: length
+batch_bins: 6200000
+accum_grad: 1
+max_epoch: 100
+patience: none
+
+frontend: null
+log_interval: 10000
+
+preencoder: null
+freeze_param: ["encoder.encoders.mask_emb","encoder.encoders.feature_extractor","encoder.encoders.post_extract_proj","encoder.encoders.encoder.pos_conv"]
+
+input_size: 1
+encoder: hubert
+encoder_conf:
+    output_size: 768
+    normalize_before: false
+    freeze_finetune_updates: 1
+    # if use espent-trained model
+    # if use downloaded model:
+    hubert_url: https://dl.fbaipublicfiles.com/hubert/hubert_base_ls960.pt
+    hubert_dir_path: ./downloads/hubert_pretrained_models/hubert_base_ls960.pt
+
+# decoder related
+decoder: mtl_decoder 
+decoder_conf:
+    pool_type: att
+    dropout_rate: 0.0
+    decoder_style: continuous
+    continuous_pool_style: "joint"
+    continuous_dim_size: 3
+
+write_collected_feats: False
+
+paramgroups: encoder,decoder
+paramlrs: 0.0001,0.001
+
+optim: adam
+optim_conf:
+     lr: 0.001
+
+scheduler: reducelronplateau
+scheduler_conf:
+  mode: max
+  factor: 0.85
+  patience: 3
+
+model_conf:
+    lsm_weight: 0.15
+    extract_feats_in_collect_stats: False
+
+normalize: null
+specaug: null
+
+# criterion
+val_scheduler_criterion:
+    - valid
+    - ccc
+early_stopping_criterion:
+    - valid
+    - ccc
+    - max
+best_model_criterion:
+-   - valid
+    - ccc
+    - max
+keep_nbest_models: 10
+

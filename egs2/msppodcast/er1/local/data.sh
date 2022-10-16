@@ -37,6 +37,7 @@ if [ ${stage} -le 1 ] && [ ${stop_stage} -ge 1 ]; then
         awk -F ' ' '{if (($3 == "H" )|| ($3 == "A" )||($3 == "S" )||($3 == "D" )||($3 == "N" )){print}}' data/${dset}/all.data > tmp && mv tmp data/${dset}/all.data 
         cut -d ' ' -f 1,2  data/${dset}/all.data | LC_ALL=C sort  > data/${dset}/utt2spk 
         cut -d ' ' -f 1,3  data/${dset}/all.data | LC_ALL=C sort  > data/${dset}/text
+	cat data/${dset}/text | awf -F ' ' '{gsub("N","<neu>",$2);gsub("A","<ang>",$2);gsub("H","<hap>",$2);gsub("S","<sad>",$2);gsub("D","<dis>",$2)}' > tmp && mv tmp data/${dset}/text
         cut -d ' ' -f 1,5,6,7  data/${dset}/all.data | LC_ALL=C sort  > data/${dset}/emotion_cts
         cut -d ' ' -f 1,4  data/${dset}/all.data | LC_ALL=C sort | awk -F ' ' '{print $1" sox -c 1 "$2" -t wav - | "}' > data/${dset}/wav.scp 
         utils/utt2spk_to_spk2utt.pl data/${dset}/utt2spk > data/${dset}/spk2utt 

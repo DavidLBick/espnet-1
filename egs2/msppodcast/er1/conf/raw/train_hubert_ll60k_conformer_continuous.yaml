@@ -12,7 +12,7 @@ frontend_conf:
     download_dir: ./hub
     multilayer_feature: True
 
-log_interval: 1000
+log_interval: 2000
 
 preencoder: linear
 preencoder_conf:
@@ -39,45 +39,40 @@ encoder_conf:
 
 
 # decoder related
-decoder: hmtl_decoder_cd
+decoder: mtl_decoder 
 decoder_conf:
     pool_type: att
     dropout_rate: 0.1
-    decoder_style: discrete,continuous
-    discrete_pool_style: "joint"
+    decoder_style: continuous
     continuous_pool_style: "independent"
-    discrete_continuous_pool_style: "independent"
     continuous_dim_size: 3
-    continuous_embedding_dim: 32
-    discrete_embedding_dim: 32
+
 
 write_collected_feats: False
 
 optim: adam
 optim_conf:
-    lr: 0.001
+     lr: 0.001
 
 scheduler: warmuplr     # pytorch v1.1.0+ required
 scheduler_conf:
-    warmup_steps: 5000
+    warmup_steps: 15000
 
 model_conf:
     lsm_weight: 0.15
     extract_feats_in_collect_stats: False
 
+normalize: null
 specaug: null
-## Criterion for best model
+# criterion
 val_scheduler_criterion:
     - valid
-    - loss
+    - ccc
 early_stopping_criterion:
     - valid
-    - acc
+    - ccc
     - max
 best_model_criterion:
--   - valid
-    - acc
-    - max
 -   - valid
     - ccc
     - max

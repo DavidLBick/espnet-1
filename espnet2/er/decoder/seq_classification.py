@@ -167,13 +167,15 @@ class MTLDecoder(AbsDecoder):
             if isinstance(self.disc_sap, torch.nn.ModuleList):
                 if emotion is not None:
                     y_vals_unique = np.unique(emotion.cpu().numpy())
-                    pooled = torch.zeros((hs_pad.shape[0], self.encoder_output_size)).to(
-                        hs_pad.device
-                    )
+                    pooled = torch.zeros(
+                        (hs_pad.shape[0], self.encoder_output_size)
+                    ).to(hs_pad.device)
                     for y_val in y_vals_unique:
                         indices = (
                             torch.from_numpy(
-                                np.array([i for i, x in enumerate(emotion) if x == y_val])
+                                np.array(
+                                    [i for i, x in enumerate(emotion) if x == y_val]
+                                )
                             )
                             .long()
                             .to(hs_pad.device)
@@ -199,7 +201,7 @@ class MTLDecoder(AbsDecoder):
                 else:
                     # Get 5 sets of logits - l1,l2,l3,l4,l5: then return (5,n_classes) -> argmax -> get 5 possible outputs - score all pairs of hyp,ref to get max score ?? / Voting ??
                     # else condition output should be [1,embedding_dim] for each SAP layer- we have 5 so result is [5,embedding_dim]
-                    pass 
+                    pass
             else:
                 pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.disc_sap)
 
@@ -218,13 +220,13 @@ class MTLDecoder(AbsDecoder):
                     pooled = self.dropout(torch.nn.functional.relu(pooled))
                     cont_logits = self.cont_processor(pooled)
                     out.append(cont_logits)
-                cont_logits = torch.cat(out, dim=1)
+                cont_logits = torch.nn.functional.relu(torch.cat(out, dim=1))
             else:
                 pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
-                cont_logits = self.cont_processor(pooled)
-        
+                cont_logits = torch.nn.functional.relu(self.cont_processor(pooled))
+
         return cont_logits, disc_logits
 
 
@@ -346,14 +348,14 @@ class HMTLDecoderCD(MTLDecoder, AbsDecoder):
                 cont_logits = self.cont_out(cont_embedding)
                 out_embedding.append(cont_embedding)
                 out.append(cont_logits)
-            cont_logits = torch.cat(out, dim=-1)
+            cont_logits = torch.nn.functional.relu(torch.cat(out, dim=-1))
             cont_embedding = torch.cat(out_embedding, dim=-1)
         else:
             pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
             # Dropout and Activation
             pooled = self.dropout(torch.nn.functional.relu(pooled))
             cont_embedding = self.cont_processor(pooled)
-            cont_logits = self.cont_out(cont_embedding)
+            cont_logits = torch.nn.functional.relu(self.cont_out(cont_embedding))
 
         if isinstance(self.disc_sap, torch.nn.ModuleList):
             y_vals_unique = np.unique(emotion.cpu().numpy())
@@ -510,12 +512,12 @@ class HMTLDecoderDC(AbsDecoder):
             )
             for y_val in y_vals_unique:
                 indices = (
-                        torch.from_numpy(
-                            np.array([i for i, x in enumerate(emotion) if x == y_val])
-                        )
-                        .long()
-                        .to(hs_pad.device)
+                    torch.from_numpy(
+                        np.array([i for i, x in enumerate(emotion) if x == y_val])
                     )
+                    .long()
+                    .to(hs_pad.device)
+                )
                 inps = (
                     torch.index_select(hs_pad, index=indices, dim=0)
                     if len(indices) > 1
@@ -550,13 +552,13 @@ class HMTLDecoderDC(AbsDecoder):
                 cont_input = torch.cat((cont_embedding, disc_embedding), dim=1)
                 cont_logits = self.cont_out(cont_input)
                 out.append(cont_logits)
-            cont_logits = torch.cat(out, dim=-1)
+            cont_logits = torch.nn.functional.relu(torch.cat(out, dim=-1))
         else:
             pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
             # Dropout and Activation
             pooled = self.dropout(torch.nn.functional.relu(pooled))
             cont_embedding = self.cont_processor(pooled)
             cont_input = torch.cat((cont_embedding, disc_embedding), dim=1)
-            cont_logits = self.cont_out(cont_input)
+            cont_logits = torch.nn.functional.relu(self.cont_out(cont_input))
 
         return cont_logits, disc_logits
