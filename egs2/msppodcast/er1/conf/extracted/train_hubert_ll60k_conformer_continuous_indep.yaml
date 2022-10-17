@@ -1,13 +1,12 @@
-# network architect`ure
+# network architecture
 batch_type: length
 batch_bins: 21000
 accum_grad: 1
-max_epoch: 100
-patience: none
+max_epoch: 50
+patience: 10
 
 frontend: null
-
-log_interval: 10000
+log_interval: 1000
 
 preencoder: linear
 preencoder_conf:
@@ -37,11 +36,11 @@ decoder: mtl_decoder
 decoder_conf:
     pool_type: att
     dropout_rate: 0.1
-    decoder_style: discrete
-    discrete_pool_style: "joint"
-    
-write_collected_feats: False 
-normalize: null 
+    decoder_style: continuous
+    continuous_pool_style: "independent"
+    continuous_dim_size: 3
+
+write_collected_feats: False
 
 optim: adam
 optim_conf:
@@ -52,26 +51,24 @@ scheduler_conf:
     warmup_steps: 15000
 
 model_conf:
-    lsm_weight: 0.0
+    lsm_weight: 0.15
     extract_feats_in_collect_stats: False
 
+normalize: null
 specaug: null
 
-## Model Selection
+# criterion
 val_scheduler_criterion:
     - valid
     - loss
 early_stopping_criterion:
     - valid
-    - loss
-    - min
+    - ccc
+    - max
 best_model_criterion:
 -   - valid
-    - acc
+    - ccc
     - max
--   - valid
-    - loss
-    - min
-
 
 keep_nbest_models: 10
+

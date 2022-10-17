@@ -12,7 +12,7 @@ train_set="train"
 valid_set="valid"
 test_sets="test1 valid"
 
-er_config=conf/train_hubert_ll60k_conformer_discrete2.yaml
+er_config=conf/extracted/train_hubert_ll60k_conformer_discrete.yaml
 inference_config=conf/decode_er.yaml
 local_data_opts=""
 er_tag=msppodcast_discrete_base  # discrete_iemocap_fold1_base
@@ -25,10 +25,13 @@ er_tag=msppodcast_discrete_base  # discrete_iemocap_fold1_base
     --max_wav_duration 30 \
     --inference_nj 4 \
     --feats_normalize null \
+    --er_stats_dir exp/er_stats_msp_hubert \
     --inference_er_model valid.acc.ave_10best.pth\
     --er_config "${er_config}" \
     --gpu_inference true \
     --inference_nj 4 \
+    --use_discrete true \
+    --use_continuous false \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \
     --valid_set "${valid_set}" \

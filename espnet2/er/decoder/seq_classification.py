@@ -250,7 +250,16 @@ class HMTLDecoderCD(MTLDecoder, AbsDecoder):
         continuous_embedding_dim: int = 32,
         discrete_embedding_dim: int = 32,
     ):
-        super().__init__()
+        super().__init__(vocab_size=vocab_size, 
+            encoder_output_size=encoder_output_size,
+            pool_type=pool_type, 
+            dropout_rate=dropout_rate, 
+            decoder_style=decoder_style, 
+            discrete_pool_style=discrete_pool_style,
+            continuous_pool_style=continuous_pool_style, 
+            discrete_continuous_pool_style=discrete_continuous_pool_style,
+            continuous_dim_size=continuous_dim_size,
+        )
         self.pool_type = pool_type
         self.discrete_pool_style = discrete_pool_style
         self.continuous_pool_style = continuous_pool_style
@@ -418,7 +427,16 @@ class HMTLDecoderDC(AbsDecoder):
         continuous_embedding_dim: int = 32,
         discrete_embedding_dim: int = 32,
     ):
-        super().__init__()
+        super().__init__(vocab_size=vocab_size, 
+            encoder_output_size=encoder_output_size,
+            pool_type=pool_type, 
+            dropout_rate=dropout_rate, 
+            decoder_style=decoder_style, 
+            discrete_pool_style=discrete_pool_style,
+            continuous_pool_style=continuous_pool_style, 
+            discrete_continuous_pool_style=discrete_continuous_pool_style,
+            continuous_dim_size=continuous_dim_size,
+        )
         self.pool_type = pool_type
         self.discrete_pool_style = discrete_pool_style
         self.continuous_pool_style = continuous_pool_style

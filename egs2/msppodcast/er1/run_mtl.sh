@@ -27,7 +27,7 @@ er_tag=msppodcast_continuous_discrete_mtl  # discrete_iemocap_fold1_base
     --feats_normalize null \
     --er_stats_dir exp/er_stats_msp_hubert \
     --use_continuous true \
-    --use_discrete false \
+    --use_discrete true \
     --inference_er_model valid.ccc.ave_10best.pth\
     --er_config "${er_config}" \
     --inference_config "${inference_config}" \
