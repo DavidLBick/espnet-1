@@ -37,5 +37,5 @@ class CCCLoss(torch.nn.Module):
         denominator = var_gt + var_pred + (mean_gt - mean_pred) ** 2
         cov = torch.mean(v_pred * v_gt)
         numerator = 2 * cov
-        ccc = numerator / denominator
+        ccc = numerator / (denominator+1e-8)
         return 1 - ccc, ccc

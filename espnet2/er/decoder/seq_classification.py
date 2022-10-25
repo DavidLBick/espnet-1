@@ -113,9 +113,11 @@ class MTLDecoder(AbsDecoder):
                     torch.nn.Linear(128, 32),
                     torch.nn.ReLU(),
                     torch.nn.Dropout(dropout_rate),
+                )
+                self.cont_out = (
                     torch.nn.Linear(32, continuous_dim_size)
                     if continuous_pool_style == "joint"
-                    else torch.nn.Linear(32, 1),
+                    else torch.nn.Linear(32, 1)
                 )
 
         if (
@@ -218,14 +220,14 @@ class MTLDecoder(AbsDecoder):
                     )
                     # Dropout and Activation
                     pooled = self.dropout(torch.nn.functional.relu(pooled))
-                    cont_logits = self.cont_processor(pooled)
+                    cont_logits = self.cont_out(self.cont_processor(pooled))
                     out.append(cont_logits)
                 cont_logits = torch.nn.functional.relu(torch.cat(out, dim=1))
             else:
                 pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
-                cont_logits = torch.nn.functional.relu(self.cont_processor(pooled))
+                cont_logits = torch.nn.functional.relu(self.cont_out(self.cont_processor(pooled)))
 
         return cont_logits, disc_logits
 
@@ -250,13 +252,14 @@ class HMTLDecoderCD(MTLDecoder, AbsDecoder):
         continuous_embedding_dim: int = 32,
         discrete_embedding_dim: int = 32,
     ):
-        super().__init__(vocab_size=vocab_size, 
+        super().__init__(
+            vocab_size=vocab_size,
             encoder_output_size=encoder_output_size,
-            pool_type=pool_type, 
-            dropout_rate=dropout_rate, 
-            decoder_style=decoder_style, 
+            pool_type=pool_type,
+            dropout_rate=dropout_rate,
+            decoder_style=decoder_style,
             discrete_pool_style=discrete_pool_style,
-            continuous_pool_style=continuous_pool_style, 
+            continuous_pool_style=continuous_pool_style,
             discrete_continuous_pool_style=discrete_continuous_pool_style,
             continuous_dim_size=continuous_dim_size,
         )
@@ -407,7 +410,7 @@ class HMTLDecoderCD(MTLDecoder, AbsDecoder):
         return cont_logits, disc_logits
 
 
-class HMTLDecoderDC(AbsDecoder):
+class HMTLDecoderDC(MTLDecoder, AbsDecoder):
     """
     Hierarchical Multitask decoder for joint emotion classification and continuous prediction
     Uses Predicted Discrete Emotion Embedding as Input to Continuous Emotion Predictor
@@ -427,13 +430,14 @@ class HMTLDecoderDC(AbsDecoder):
         continuous_embedding_dim: int = 32,
         discrete_embedding_dim: int = 32,
     ):
-        super().__init__(vocab_size=vocab_size, 
+        super().__init__(
+            vocab_size=vocab_size,
             encoder_output_size=encoder_output_size,
-            pool_type=pool_type, 
-            dropout_rate=dropout_rate, 
-            decoder_style=decoder_style, 
+            pool_type=pool_type,
+            dropout_rate=dropout_rate,
+            decoder_style=decoder_style,
             discrete_pool_style=discrete_pool_style,
-            continuous_pool_style=continuous_pool_style, 
+            continuous_pool_style=continuous_pool_style,
             discrete_continuous_pool_style=discrete_continuous_pool_style,
             continuous_dim_size=continuous_dim_size,
         )
@@ -567,7 +571,7 @@ class HMTLDecoderDC(AbsDecoder):
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
                 cont_embedding = self.cont_processor(pooled)
-                cont_input = torch.cat((cont_embedding, disc_embedding), dim=1)
+                cont_input = torch.cat((cont_embedding, disc_embedding), dim=-1)
                 cont_logits = self.cont_out(cont_input)
                 out.append(cont_logits)
             cont_logits = torch.nn.functional.relu(torch.cat(out, dim=-1))
@@ -576,7 +580,187 @@ class HMTLDecoderDC(AbsDecoder):
             # Dropout and Activation
             pooled = self.dropout(torch.nn.functional.relu(pooled))
             cont_embedding = self.cont_processor(pooled)
-            cont_input = torch.cat((cont_embedding, disc_embedding), dim=1)
+            cont_input = torch.cat((cont_embedding, disc_embedding), dim=-1)
             cont_logits = torch.nn.functional.relu(self.cont_out(cont_input))
+
+        return cont_logits, disc_logits
+
+
+
+
+class HMTLDecoderAll(MTLDecoder, AbsDecoder):
+    """
+    Hierarchical Multitask decoder for joint emotion classification and continuous prediction
+    Uses Predicted Discrete Emotion Embedding as Input to Continuous Emotion Predictor
+    """
+
+    def __init__(
+        self,
+        vocab_size: int,
+        encoder_output_size: int,
+        pool_type: str = "mean",
+        dropout_rate: float = 0.1,
+        decoder_style: str = "discrete,continuous",
+        discrete_pool_style: str = "independent",
+        continuous_pool_style: str = "independent",
+        discrete_continuous_pool_style: str = "independent",
+        continuous_dim_size: int = 3,
+        continuous_embedding_dim: int = 32,
+        discrete_embedding_dim: int = 32,
+    ):
+        super().__init__(
+            vocab_size=vocab_size,
+            encoder_output_size=encoder_output_size,
+            pool_type=pool_type,
+            dropout_rate=dropout_rate,
+            decoder_style=decoder_style,
+            discrete_pool_style=discrete_pool_style,
+            continuous_pool_style=continuous_pool_style,
+            discrete_continuous_pool_style=discrete_continuous_pool_style,
+            continuous_dim_size=continuous_dim_size,
+        )
+        self.pool_type = pool_type
+        self.discrete_pool_style = discrete_pool_style
+        self.continuous_pool_style = continuous_pool_style
+        self.discrete_continuous_pool_style = discrete_continuous_pool_style
+        self.decoder_style = decoder_style
+        self.encoder_output_size = encoder_output_size
+        self.continuous_dim_size = continuous_dim_size
+
+        if "discrete" in decoder_style:
+            if pool_type == "att":
+                self.disc_sap = (
+                    SelfAttentionPooling(encoder_output_size)
+                    if discrete_pool_style == "joint"
+                    else torch.nn.ModuleList(
+                        [
+                            SelfAttentionPooling(encoder_output_size)
+                            for _ in range(vocab_size)
+                        ]
+                    )
+                )
+                self.disc_processor = torch.nn.Sequential(
+                    torch.nn.Linear(encoder_output_size, 128),
+                    torch.nn.ReLU(),
+                    torch.nn.Dropout(dropout_rate),
+                    torch.nn.Linear(128, discrete_embedding_dim),
+                    torch.nn.ReLU(),
+                    torch.nn.Dropout(dropout_rate),
+                )
+                self.disc_out = torch.nn.Linear(discrete_embedding_dim+continuous_embedding_dim, vocab_size)
+
+        if "continuous" in decoder_style:
+            if pool_type == "att":
+                self.cont_sap = (
+                    SelfAttentionPooling(encoder_output_size)
+                    if continuous_pool_style == "joint"
+                    else torch.nn.ModuleList(
+                        [
+                            SelfAttentionPooling(encoder_output_size)
+                            for _ in range(continuous_dim_size)
+                        ]
+                    )
+                )
+            self.cont_processor = torch.nn.Sequential(
+                torch.nn.Linear(encoder_output_size, 128),
+                torch.nn.ReLU(),
+                torch.nn.Dropout(dropout_rate),
+                torch.nn.Linear(128, continuous_embedding_dim),
+                torch.nn.ReLU(),
+                torch.nn.Dropout(dropout_rate),
+            )
+            self.cont_out = (
+                torch.nn.Linear(
+                    continuous_embedding_dim + discrete_embedding_dim,
+                    continuous_dim_size,
+                )
+                if continuous_pool_style == "joint"
+                else torch.nn.Linear(
+                    continuous_embedding_dim + discrete_embedding_dim, 1
+                )
+            )
+
+        if (
+            "discrete" in decoder_style
+            and "continuous" in decoder_style
+            and discrete_continuous_pool_style == "joint"
+        ):
+            assert (
+                discrete_pool_style == "joint" and continuous_pool_style == "joint"
+            ), "discrete_continuous_pool_style must be joint if discrete_pool_style and continuous_pool_style are joint"
+            self.cont_sap = self.disc_sap
+
+        self.dropout = torch.nn.Dropout(p=dropout_rate)
+        self.disc_attn = None
+        self.cts_attn = None
+
+    def forward(self, hs_pad, hlens, emotion=None, emotion_cts=None):
+        """
+        Args:
+            hs_pad: (batch, time, dim)  encoder hidden states
+            hlens: (batch, )  encoder hidden states lengths
+            emotion: (batch, )  emotion labels
+            emotion_cts: (batch,K )  emotion continuous values, where K is the dimensionality of the emotion space
+        """
+        disc_logits = None  # discrete emotion logits
+        cont_logits = None  # continuous emotion logits
+
+        if isinstance(self.disc_sap, torch.nn.ModuleList):
+            y_vals_unique = np.unique(emotion.cpu().numpy())
+            pooled = torch.zeros((hs_pad.shape[0], self.encoder_output_size)).to(
+                hs_pad.device
+            )
+            for y_val in y_vals_unique:
+                indices = (
+                    torch.from_numpy(
+                        np.array([i for i, x in enumerate(emotion) if x == y_val])
+                    )
+                    .long()
+                    .to(hs_pad.device)
+                )
+                inps = (
+                    torch.index_select(hs_pad, index=indices, dim=0)
+                    if len(indices) > 1
+                    else hs_pad
+                )
+                lens = (
+                    torch.index_select(input=hlens, index=indices, dim=0)
+                    if len(indices) > 1
+                    else hlens
+                )
+                assert y_val < len(
+                    self.disc_sap
+                ), f"y_val {y_val} is out of range of length of self.disc_sap {len(self.disc_sap)}"
+                out, att = self.pool(inps, lens, self.pool_type, self.disc_sap[y_val])
+                for i, ind in enumerate(indices):
+                    pooled[ind] = out[i].squeeze(1)
+        else:
+            pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.disc_sap)
+
+        # Dropout and Activation
+        pooled = self.dropout(torch.nn.functional.relu(pooled))
+        disc_embedding = self.disc_processor(pooled)
+        
+
+        if isinstance(self.cont_sap, torch.nn.ModuleList):
+            out = []
+            for i in range(self.continuous_dim_size):
+                pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap[i])
+                # Dropout and Activation
+                pooled = self.dropout(torch.nn.functional.relu(pooled))
+                cont_embedding = self.cont_processor(pooled)
+                cont_input = torch.cat((cont_embedding, disc_embedding), dim=-1)
+                cont_logits = self.cont_out(cont_input)
+                out.append(cont_logits)
+            cont_logits = torch.nn.functional.relu(torch.cat(out, dim=-1))
+        else:
+            pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
+            # Dropout and Activation
+            pooled = self.dropout(torch.nn.functional.relu(pooled))
+            cont_embedding = self.cont_processor(pooled)
+            cont_input = torch.cat((cont_embedding, disc_embedding), dim=-1)
+            cont_logits = torch.nn.functional.relu(self.cont_out(cont_input))
+        combined_disc_embedding = torch.cat((disc_embedding,cont_embedding),dim=-1)
+        disc_logits = self.disc_out(combined_disc_embedding)
 
         return cont_logits, disc_logits

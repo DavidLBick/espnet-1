@@ -3,7 +3,7 @@ batch_type: length
 batch_bins: 21000
 accum_grad: 1
 max_epoch: 50
-patience: 10
+patience: none
 
 frontend: null
 log_interval: 1000
@@ -19,9 +19,9 @@ encoder_conf:
     attention_heads: 8
     linear_units: 64
     num_blocks: 4
-    dropout_rate: 0.1
-    positional_dropout_rate: 0.1
-    attention_dropout_rate: 0.1
+    dropout_rate: 0.15
+    positional_dropout_rate: 0.15
+    attention_dropout_rate: 0.15
     input_layer: linear
     normalize_before: true
     macaron_style: true
@@ -35,12 +35,13 @@ encoder_conf:
 decoder: mtl_decoder
 decoder_conf:
     pool_type: att
-    dropout_rate: 0.1
+    dropout_rate: 0.2
     decoder_style: discrete,continuous
     discrete_pool_style: "joint"
     continuous_pool_style: "independent"
     discrete_continuous_pool_style: "independent"
     continuous_dim_size: 3
+
 
 
 write_collected_feats: False
@@ -49,14 +50,20 @@ optim: adam
 optim_conf:
     lr: 0.001
 
+    #scheduler: reducelronplateau
+#scheduler_conf:
+#        factor: 0.85
+#        mode: max
+#        patience: 3
+
 scheduler: warmuplr     # pytorch v1.1.0+ required
 scheduler_conf:
     warmup_steps: 15000
 
 model_conf:
-    lsm_weight: 0.15
+    lsm_weight: 0.0
     extract_feats_in_collect_stats: False
-    discrete_cts_weight: [ 2.0,1.0]
+    discrete_cts_weight: [ 1.0,1.0]
 
 normalize: null
 specaug: null
@@ -67,14 +74,17 @@ val_scheduler_criterion:
     - loss
 early_stopping_criterion:
     - valid
-    - loss
-    - min
+    - score
+    - max
 best_model_criterion:
 -   - valid
     - ccc
     - max
 -   - valid
     - acc
+    - max
+-   - valid
+    - score
     - max
 
 keep_nbest_models: 10

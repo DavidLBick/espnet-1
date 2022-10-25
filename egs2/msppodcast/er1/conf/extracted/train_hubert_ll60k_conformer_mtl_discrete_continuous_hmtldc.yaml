@@ -64,7 +64,7 @@ specaug: null
 # criterion
 val_scheduler_criterion:
     - valid
-    - loss
+    - ccc
 early_stopping_criterion:
     - valid
     - ccc
@@ -72,6 +72,12 @@ early_stopping_criterion:
 best_model_criterion:
 -   - valid
     - ccc
+    - max
+-   - valid
+    - acc
+    - max
+-   - valid
+    - score
     - max
 
 keep_nbest_models: 10

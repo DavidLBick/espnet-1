@@ -51,7 +51,7 @@ scheduler_conf:
     warmup_steps: 15000
 
 model_conf:
-    lsm_weight: 0.15
+    lsm_weight: 0.0
     extract_feats_in_collect_stats: False
 
 normalize: null

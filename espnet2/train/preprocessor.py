@@ -169,6 +169,7 @@ class CommonPreprocessor(AbsPreprocessor):
             self.token_id_converter = TokenIDConverter(
                 token_list=token_list,
                 unk_symbol=unk_symbol,
+                custom_mapping={"None": 1000000},
             )
         else:
             self.text_cleaner = None
@@ -412,6 +413,7 @@ class SLUPreprocessor(CommonPreprocessor):
             data["transcript"] = np.array(text_ints, dtype=np.int64)
         assert check_return_type(data)
         return data
+
 
 class CommonPreprocessor_multi(AbsPreprocessor):
     def __init__(

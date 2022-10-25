@@ -3,7 +3,7 @@ batch_type: length
 batch_bins: 21000
 accum_grad: 1
 max_epoch: 50
-patience: none
+patience: 20
 
 frontend: null
 log_interval: 1000
@@ -46,17 +46,23 @@ decoder_conf:
 
 write_collected_feats: False
 
+freeze_param: ["encoder","decoder.cont_processor","decoder.cont_sap","decoder.cont_out"]
+
+
 optim: adam
 optim_conf:
     lr: 0.001
 
-scheduler: warmuplr     # pytorch v1.1.0+ required
+scheduler: reducelronplateau     # pytorch v1.1.0+ required
 scheduler_conf:
-    warmup_steps: 15000
+        mode: max
+        factor: 0.85
+        patience: 3
 
 model_conf:
     lsm_weight: 0.15
     extract_feats_in_collect_stats: False
+    discrete_cts_weight: [ 1.0, 0.0]
 
 normalize: null
 specaug: null
@@ -64,20 +70,14 @@ specaug: null
 # criterion
 val_scheduler_criterion:
     - valid
-    - loss
+    - acc
 early_stopping_criterion:
     - valid
-    - loss
-    - min
-best_model_criterion:
--   - valid
-    - ccc
-    - max
--   - valid
     - acc
     - max
+best_model_criterion:
 -   - valid
-    - score
+    - acc
     - max
 
 keep_nbest_models: 10

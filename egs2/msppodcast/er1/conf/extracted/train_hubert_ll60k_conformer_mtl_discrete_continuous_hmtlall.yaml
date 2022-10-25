@@ -32,7 +32,7 @@ encoder_conf:
     cnn_module_kernel: 31
 
 # decoder related
-decoder: hmtl_decoder_cd
+decoder: hmtl_decoder_all
 decoder_conf:
     pool_type: att
     dropout_rate: 0.1

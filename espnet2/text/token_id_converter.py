@@ -10,6 +10,7 @@ class TokenIDConverter:
         self,
         token_list: Union[Path, str, Iterable[str]],
         unk_symbol: str = "<unk>",
+        custom_mapping: Dict[str, int] = None,
     ):
         assert check_argument_types()
 
@@ -37,10 +38,12 @@ class TokenIDConverter:
             if t in self.token2id:
                 raise RuntimeError(f'Symbol "{t}" is duplicated')
             self.token2id[t] = i
-
+        if custom_mapping is not None:
+            self.token2id.update(custom_mapping)
         self.unk_symbol = unk_symbol
         if self.unk_symbol not in self.token2id:
-            print(f" WARNING | Unknown symbol '{unk_symbol}' doesn't exist in the token_list"
+            print(
+                f" WARNING | Unknown symbol '{unk_symbol}' doesn't exist in the token_list"
             )
             self.unk_id = 0
         else:

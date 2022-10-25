@@ -138,9 +138,11 @@ class ESPnetERModel(AbsESPnetModel):
             ccc = float(sum(ccc)) / len(ccc)
         loss = 0.0
         if loss_att is not None:
-            loss += self.dc_weight[0] * loss_att
+            loss_att *= self.dc_weight[0]
+            loss += loss_att
         if loss_ccc is not None:
-            loss += self.dc_weight[1] * loss_ccc
+            loss_ccc *= self.dc_weight[1]
+            loss += loss_ccc
         # Collect Attn branch stats
         stats["loss_att"] = loss_att.detach() if loss_att is not None else None
         stats["loss_ccc"] = loss_ccc.detach() if loss_ccc is not None else None
@@ -151,6 +153,9 @@ class ESPnetERModel(AbsESPnetModel):
         stats["ccc_d"] = ccc_d
         stats["ccc"] = ccc
         stats["loss"] = loss.detach()
+        stats["score"] = (
+            (acc_att + ccc) / 2 if acc_att is not None and ccc is not None else None
+        )
 
         # Collect total loss stats
         stats["loss"] = loss.detach()
@@ -250,15 +255,67 @@ class ESPnetERModel(AbsESPnetModel):
     ):
 
         # 1. Forward decoder
-        cts_out, discrete_out = self.decoder(
-            encoder_out, encoder_out_lens, emotion, emotion_cts
-        )
+        if (
+            emotion is not None
+            and 1000000 in emotion) or (emotion_cts is not None and 1000000 in emotion_cts.view(-1)): 
+            logging.warning(f"emotion: {emotion} {emotion_cts}")           
+            discrete_out = None
+            cts_out = None
+            encoder_disc = None
+            encoder_cts = None
+            encoder_cts_lens = None
+            encoder_disc_lens = None
+            if 1000000 in emotion:
+                select_indices = [
+                    i for i in range(len(emotion)) if emotion[i] != 1000000
+                ]
+                emotion_part = emotion[select_indices]
+                encoder_disc = encoder_out[select_indices, :, :]
+                encoder_disc_lens = encoder_out_lens[select_indices]
+                emotion = emotion_part
+            if 1000000 in emotion_cts.view(-1):
+                select_indices = [
+                    i for i in range(len(emotion_cts)) if emotion_cts[i][0] != 1000000
+                ]
+                emotion_cts_part = emotion_cts[select_indices, :]
+                encoder_cts = encoder_out[select_indices, :, :]
+                encoder_cts_lens = encoder_out_lens[select_indices]
+                emotion_cts = emotion_cts_part
+
+            if len(emotion) > 0:
+                encoder_disc = encoder_disc if encoder_disc is not None else encoder_out
+                encoder_disc_lens = (
+                    encoder_disc_lens
+                    if encoder_disc_lens is not None
+                    else encoder_out_lens
+                )
+                _, discrete_out = self.decoder(
+                    encoder_disc, encoder_disc_lens, emotion, emotion_cts=None
+                )
+            if len(emotion_cts) > 0:
+                encoder_cts = encoder_cts if encoder_cts is not None else encoder_out
+                encoder_cts_lens = (
+                    encoder_cts_lens
+                    if encoder_cts_lens is not None
+                    else encoder_out_lens
+                )
+                cts_out, _ = self.decoder(
+                    encoder_cts,
+                    encoder_cts_lens,
+                    emotion=None,
+                    emotion_cts=emotion_cts,
+                )
+        else:
+            # logging.info("Encoder out shape: {} MAX LENS {} ".format(encoder_out.shape,int(max(encoder_out_lens))))
+            cts_out, discrete_out = self.decoder(
+                encoder_out, encoder_out_lens, emotion, emotion_cts
+            )
 
         # 2. Compute attention loss
         loss_att = None
         acc = 0
         f1 = 0
-        if "discrete" in self.mode:
+        if "discrete" in self.mode and discrete_out is not None:
             emotion = emotion.squeeze(-1)  # [B, 1] -> [B,]
             discrete_out = discrete_out.squeeze(1)  # [7,1,5] -> [7,5]
             loss_att = self.criterion_att(discrete_out, emotion)
@@ -274,15 +331,19 @@ class ESPnetERModel(AbsESPnetModel):
 
         loss_ccc = None
         ccc = None
-        if "continuous" in self.mode:
+        if "continuous" in self.mode and cts_out is not None:
             ccc = []
             loss_ccc = 0
             cts_out = cts_out.squeeze(1)
-            for i in range(emotion_cts.shape[-1]):
-                loss, ccc_x = self.criterion_ccc(
-                    cts_out[:, i].view(-1), emotion_cts[:, i]
-                )
-                loss_ccc += self.ct_weight[i] * loss
-                ccc.append(ccc_x)
+            if cts_out.shape[0] == 1:
+                loss_ccc = torch.nn.functional.mse_loss(cts_out.squeeze(-1), emotion_cts)
+                ccc = [0.0, 0.0, 0.0]
+            else:
+                for i in range(emotion_cts.shape[-1]):
+                    loss, ccc_x = self.criterion_ccc(
+                        cts_out[:, i].view(-1), emotion_cts[:, i]
+                    )
+                    loss_ccc += self.ct_weight[i] * loss
+                    ccc.append(ccc_x)
 
         return loss_att, acc, f1, loss_ccc, ccc

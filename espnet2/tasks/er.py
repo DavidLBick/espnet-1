@@ -39,6 +39,7 @@ from espnet2.er.decoder.seq_classification import (
     HMTLDecoderCD,
     HMTLDecoderDC,
     MTLDecoder,
+    HMTLDecoderAll,
 )
 from espnet2.er.espnet_model import ESPnetERModel
 from espnet2.layers.abs_normalize import AbsNormalize
@@ -126,6 +127,7 @@ decoder_choices = ClassChoices(
         mtl_decoder=MTLDecoder,
         hmtl_decoder_cd=HMTLDecoderCD,
         hmtl_decoder_dc=HMTLDecoderDC,
+        hmtl_decoder_all=HMTLDecoderAll,
     ),
     default="mtl_decoder",
 )
