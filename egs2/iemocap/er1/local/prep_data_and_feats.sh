@@ -10,7 +10,6 @@ nj=$1
 train_set="train_fold0"${nj}
 valid_set="valid_fold0"${nj}
 test_sets="test_fold0"${nj}
-test_sets="test1_norm"
 er_config=conf/train_hubert_ll60k_conformer_continuous.yaml
 inference_config=conf/decode_er.yaml
 
@@ -25,7 +24,7 @@ CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --lang en \
     --ngpu 1 \
     --stage 2 \
-    --stop_stage 4 \
+    --stop_stage 5 \
     --token_type word \
     --use_continuous true \
     --use_discrete true \
