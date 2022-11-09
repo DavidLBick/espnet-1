@@ -259,7 +259,7 @@ def inference(
     )
 
     # 7 .Start for-loop
-    # TODO(roshansh): Add batch decoding compat 
+    # TODO(roshansh): Add batch decoding compat
     with DatadirWriter(output_dir) as writer:
         for keys, batch in loader:
             assert isinstance(batch, dict), type(batch)
@@ -282,9 +282,11 @@ def inference(
                     ibest_writer = writer[f"{n}best_recog"]
                     # Write the result to each file
                     if emo_out is not None:
-                        ibest_writer["emotion_cts"][key] = " ".join([str(x) for x in emo_out])
+                        ibest_writer["emotion_cts"][key] = " ".join(
+                            [str(x) for x in emo_out]
+                        )
                     if text is not None:
-                        ibest_writer["text"][key] = ("").join(text).replace(' ','')
+                        ibest_writer["text"][key] = ("").join(text).replace(" ", "")
                         ibest_writer["token"][key] = token
                         ibest_writer["token_int"][key] = str(token_int)
                         ibest_writer["score"][key] = str(score[0])

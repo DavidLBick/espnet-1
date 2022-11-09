@@ -1,33 +1,24 @@
 #!/usr/bin/env python3
 import argparse
 import logging
-from pathlib import Path
+import os
 import sys
-from typing import Any
-from typing import Optional
-from typing import Sequence
-from typing import Tuple
-from typing import Union
+from pathlib import Path
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-from typeguard import check_argument_types
-from typeguard import check_return_type
-from typing import List
+from kaldiio import WriteHelper
+from typeguard import check_argument_types, check_return_type
 
-from espnet.nets.pytorch_backend.transformer.subsampling import TooShortUttError
-from espnet.utils.cli_utils import get_commandline_args
 from espnet2.fileio.datadir_writer import DatadirWriter
 from espnet2.tasks.asr import ASRTask
 from espnet2.torch_utils.device_funcs import to_device
 from espnet2.torch_utils.set_all_random_seed import set_all_random_seed
 from espnet2.utils import config_argparse
-from espnet2.utils.types import str2bool
-from espnet2.utils.types import str2triple_str
-from espnet2.utils.types import str_or_none
-
-from kaldiio import WriteHelper
-import os
+from espnet2.utils.types import str2bool, str2triple_str, str_or_none
+from espnet.nets.pytorch_backend.transformer.subsampling import TooShortUttError
+from espnet.utils.cli_utils import get_commandline_args
 
 
 class EncoderDump:
@@ -100,7 +91,8 @@ class EncoderDump:
 
     @staticmethod
     def from_pretrained(
-        model_tag: Optional[str] = None, **kwargs: Optional[Any],
+        model_tag: Optional[str] = None,
+        **kwargs: Optional[Any],
     ):
         """Build Speech2Text instance from the pretrained model.
 
@@ -168,7 +160,8 @@ def dump(
         dtype=dtype,
     )
     encoder_dump = EncoderDump.from_pretrained(
-        model_tag=model_tag, **speech2text_kwargs,
+        model_tag=model_tag,
+        **speech2text_kwargs,
     )
 
     # 3. Build data-iterator
@@ -245,7 +238,10 @@ def get_parser():
 
     parser.add_argument("--output_dir", type=str, required=True)
     parser.add_argument(
-        "--ngpu", type=int, default=0, help="The number of gpus. 0 indicates CPU mode",
+        "--ngpu",
+        type=int,
+        default=0,
+        help="The number of gpus. 0 indicates CPU mode",
     )
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument(
@@ -273,10 +269,14 @@ def get_parser():
 
     group = parser.add_argument_group("The model configuration related")
     group.add_argument(
-        "--asr_train_config", type=str, help="ASR training configuration",
+        "--asr_train_config",
+        type=str,
+        help="ASR training configuration",
     )
     group.add_argument(
-        "--asr_model_file", type=str, help="ASR model parameter file",
+        "--asr_model_file",
+        type=str,
+        help="ASR model parameter file",
     )
     group.add_argument(
         "--model_tag",
@@ -286,7 +286,10 @@ def get_parser():
     )
     group = parser.add_argument_group("Beam-search related")
     group.add_argument(
-        "--batch_size", type=int, default=1, help="The batch size for inference",
+        "--batch_size",
+        type=int,
+        default=1,
+        help="The batch size for inference",
     )
     return parser
 

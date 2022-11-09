@@ -818,10 +818,16 @@ class AbsTask(ABC):
 
         group = parser.add_argument_group("Optimizer related")
         group.add_argument(
-            "--paramgroups", type=str, default=None, help="The LRs",
+            "--paramgroups",
+            type=str,
+            default=None,
+            help="The LRs",
         )
         group.add_argument(
-            f"--paramlrs", type=str, default=None, help="The LRs",
+            f"--paramlrs",
+            type=str,
+            default=None,
+            help="The LRs",
         )
         for i in range(1, cls.num_optimizers + 1):
             suf = "" if i == 1 else str(i)

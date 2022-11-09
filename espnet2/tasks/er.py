@@ -36,10 +36,10 @@ from espnet2.asr.preencoder.sinc import LightweightSincConvs
 from espnet2.asr.specaug.abs_specaug import AbsSpecAug
 from espnet2.asr.specaug.specaug import SpecAug
 from espnet2.er.decoder.seq_classification import (
+    HMTLDecoderAll,
     HMTLDecoderCD,
     HMTLDecoderDC,
     MTLDecoder,
-    HMTLDecoderAll,
 )
 from espnet2.er.espnet_model import ESPnetERModel
 from espnet2.layers.abs_normalize import AbsNormalize

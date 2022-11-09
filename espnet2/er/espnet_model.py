@@ -255,10 +255,10 @@ class ESPnetERModel(AbsESPnetModel):
     ):
 
         # 1. Forward decoder
-        if (
-            emotion is not None
-            and 1000000 in emotion) or (emotion_cts is not None and 1000000 in emotion_cts.view(-1)): 
-            logging.warning(f"emotion: {emotion} {emotion_cts}")           
+        if (emotion is not None and 1000000 in emotion) or (
+            emotion_cts is not None and 1000000 in emotion_cts.view(-1)
+        ):
+            logging.warning(f"emotion: {emotion} {emotion_cts}")
             discrete_out = None
             cts_out = None
             encoder_disc = None
@@ -336,7 +336,9 @@ class ESPnetERModel(AbsESPnetModel):
             loss_ccc = 0
             cts_out = cts_out.squeeze(1)
             if cts_out.shape[0] == 1:
-                loss_ccc = torch.nn.functional.mse_loss(cts_out.squeeze(-1), emotion_cts)
+                loss_ccc = torch.nn.functional.mse_loss(
+                    cts_out.squeeze(-1), emotion_cts
+                )
                 ccc = [0.0, 0.0, 0.0]
             else:
                 for i in range(emotion_cts.shape[-1]):

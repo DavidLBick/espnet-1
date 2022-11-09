@@ -227,7 +227,9 @@ class MTLDecoder(AbsDecoder):
                 pooled, att = self.pool(hs_pad, hlens, self.pool_type, self.cont_sap)
                 # Dropout and Activation
                 pooled = self.dropout(torch.nn.functional.relu(pooled))
-                cont_logits = torch.nn.functional.relu(self.cont_out(self.cont_processor(pooled)))
+                cont_logits = torch.nn.functional.relu(
+                    self.cont_out(self.cont_processor(pooled))
+                )
 
         return cont_logits, disc_logits
 
@@ -586,8 +588,6 @@ class HMTLDecoderDC(MTLDecoder, AbsDecoder):
         return cont_logits, disc_logits
 
 
-
-
 class HMTLDecoderAll(MTLDecoder, AbsDecoder):
     """
     Hierarchical Multitask decoder for joint emotion classification and continuous prediction
@@ -647,7 +647,9 @@ class HMTLDecoderAll(MTLDecoder, AbsDecoder):
                     torch.nn.ReLU(),
                     torch.nn.Dropout(dropout_rate),
                 )
-                self.disc_out = torch.nn.Linear(discrete_embedding_dim+continuous_embedding_dim, vocab_size)
+                self.disc_out = torch.nn.Linear(
+                    discrete_embedding_dim + continuous_embedding_dim, vocab_size
+                )
 
         if "continuous" in decoder_style:
             if pool_type == "att":
@@ -740,7 +742,6 @@ class HMTLDecoderAll(MTLDecoder, AbsDecoder):
         # Dropout and Activation
         pooled = self.dropout(torch.nn.functional.relu(pooled))
         disc_embedding = self.disc_processor(pooled)
-        
 
         if isinstance(self.cont_sap, torch.nn.ModuleList):
             out = []
@@ -760,7 +761,7 @@ class HMTLDecoderAll(MTLDecoder, AbsDecoder):
             cont_embedding = self.cont_processor(pooled)
             cont_input = torch.cat((cont_embedding, disc_embedding), dim=-1)
             cont_logits = torch.nn.functional.relu(self.cont_out(cont_input))
-        combined_disc_embedding = torch.cat((disc_embedding,cont_embedding),dim=-1)
+        combined_disc_embedding = torch.cat((disc_embedding, cont_embedding), dim=-1)
         disc_logits = self.disc_out(combined_disc_embedding)
 
         return cont_logits, disc_logits

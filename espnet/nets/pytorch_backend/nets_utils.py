@@ -161,7 +161,9 @@ def make_pad_mask(lengths, xs=None, length_dim=-1, maxlen=None):
             maxlen = xs.size(length_dim)
     else:
         assert xs is None
-        assert maxlen >= int(max(lengths)),f"Maxlen {maxlen} is not >= {int(max(lengths))}"
+        assert maxlen >= int(
+            max(lengths)
+        ), f"Maxlen {maxlen} is not >= {int(max(lengths))}"
 
     seq_range = torch.arange(0, maxlen, dtype=torch.int64)
     seq_range_expand = seq_range.unsqueeze(0).expand(bs, maxlen)
