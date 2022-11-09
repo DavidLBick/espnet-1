@@ -1,3 +1,6 @@
+"""
+This task describes continuous and discrete emotion prediction from speech
+"""
 import argparse
 import logging
 from typing import Callable, Collection, Dict, List, Optional, Tuple
