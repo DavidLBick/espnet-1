@@ -12,15 +12,17 @@ train_set="train"
 valid_set="valid"
 test_sets="test1 valid"
 
-er_config=conf/extracted/train_hubert_ll60k_conformer_mtl_discrete_continuous_hmtldc.yaml
+er_config=conf/extracted/train_hubert_ll60k_conformer_mtl_discrete_continuous.yaml
 inference_config=conf/decode_er.yaml
 local_data_opts=""
-er_tag=msppodcast_continuous_discrete_hmtl_dc  # discrete_iemocap_fold1_base
+er_tag=msppodcast_continuous_discrete_mtl  # discrete_iemocap_fold1_base
 
 ./er.sh \
     --lang en \
     --ngpu 1 \
     --token_type word \
+    --stage 7 \
+    --stop_stage 9 \
     --feats_type extracted \
     --max_wav_duration 30 \
     --inference_nj 5 \
@@ -34,6 +36,5 @@ er_tag=msppodcast_continuous_discrete_hmtl_dc  # discrete_iemocap_fold1_base
     --train_set "${train_set}" \
     --valid_set "${valid_set}" \
     --test_sets "${test_sets}" \
-    --er_args "--use_wandb true --wandb_project multilabel-emorec --wandb_entity cmu-mlsp-emo --wandb_name ${er_tag}" \
     --er_tag ${er_tag} \
     --local_data_opts "${local_data_opts}" "$@"

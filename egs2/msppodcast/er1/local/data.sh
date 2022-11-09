@@ -14,7 +14,7 @@ stage=1
 stop_stage=100
 
 
-datadir=/ocean/projects/iri120008p/roshansh/corpora/msppodcast
+datadir=${MSPPODCAST}
 
 log "$0 $*"
 . utils/parse_options.sh

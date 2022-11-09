@@ -10,7 +10,6 @@ nj=$1
 train_set="train_fold0"${nj}
 valid_set="valid_fold0"${nj}
 test_sets="test_fold0"${nj}
-test_sets=${test_sets}" "${valid_set}
 er_config=conf/train_hubert_ll60k_conformer_mtl_discrete_continuous.yaml
 inference_config=conf/decode_er.yaml
 
@@ -20,12 +19,13 @@ else
 	cuda_device=0
 fi 
 echo $nj $cuda_device $train_set $valid_set $test_sets
+cuda_device=$2
 
 CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --lang en \
     --ngpu 1 \
     --stage 6 \
-    --stop_stage 6 \
+    --stop_stage 9 \
     --token_type word \
     --use_continuous true \
     --use_discrete true \
@@ -36,9 +36,8 @@ CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --inference_nj 8 \
     --gpu_inference true \
     --feats_normalize null \
-    --inference_er_model valid.acc.ave_10best.pth \
+    --inference_er_model valid.ccc.ave_10best.pth \
     --er_tag conformer_discrete_continuous_mtl_base_hubertlarge_fold${nj} \
-    --er_args "--wandb_project multilabel-emorec --wandb_entity cmu-mlsp-emo --use_wandb true --wandb_name conformer_discrete_continuous_mtl_hubertlarge_fold${nj}" \
     --er_config "${er_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \

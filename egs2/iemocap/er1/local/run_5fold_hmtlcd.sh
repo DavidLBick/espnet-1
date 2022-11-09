@@ -25,7 +25,7 @@ CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --lang en \
     --ngpu 1 \
     --stage 6 \
-    --stop_stage 6 \
+    --stop_stage 9 \
     --token_type word \
     --use_continuous true \
     --use_discrete true \
@@ -33,12 +33,11 @@ CUDA_VISIBLE_DEVICES=${cuda_device} ./er.sh \
     --feats_type raw \
     --nj 8 \
     --max_wav_duration 30 \
-    --inference_nj 8 \
+    --inference_nj 5 \
     --gpu_inference true \
     --feats_normalize null \
-    --inference_er_model valid.acc.ave_10best.pth \
+    --inference_er_model valid.ccc.best.pth \
     --er_tag conformer_discrete_continuous_hmtlcd_hubertlarge_fold${nj} \
-    --er_args "--wandb_project multilabel-emorec --wandb_entity cmu-mlsp-emo --use_wandb true --wandb_name conformer_discrete_continuous_hmtlcd_hubertlarge_fold${nj}" \
     --er_config "${er_config}" \
     --inference_config "${inference_config}" \
     --train_set "${train_set}" \

@@ -26,7 +26,7 @@ remove_emo=
 # fru (frustration), fea (fear), sur (surprise), neu (neutral), and xxx (other)
 
 #data
-datadir=/ocean/projects/iri120008p/roshansh/corpora/IEMOCAP_full_release/IEMOCAP_full_release
+datadir=${IEMOCAP}
 # IEMOCAP_full_release
 #  |_ README.txt
 #  |_ Documentation/

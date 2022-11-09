@@ -305,5 +305,6 @@ if [[ "$(hostname -d)" == clsp.jhu.edu ]]; then
     TOTONAC=downloads
     GOOGLEI18N=downloads
     MALAYALAM=
-
+    IEMOCAP=/ocean/projects/iri120008p/roshansh/corpora/IEMOCAP_full_release/IEMOCAP_full_release
+    MSPPODCAST=/ocean/projects/iri120008p/roshansh/corpora/msppodcast
 fi
