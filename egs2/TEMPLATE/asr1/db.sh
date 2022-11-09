@@ -156,8 +156,13 @@ VOXFORGE=downloads
 VOXPOPULI=downloads
 HARPERVALLEY=downloads
 TALROMUR=downloads
+TALROMUR2=downloads
 DCASE=
 TEDX_SPANISH=downloads
+IAM=downloads
+OFUTON=
+OPENCPOP=
+M_AILABS=downloads
 
 # For only CMU TIR environment
 if [[ "$(hostname)" == tir* ]]; then
